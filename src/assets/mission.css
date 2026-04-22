@@ -1,0 +1,386 @@
+.mission-page {
+	min-height: 100vh;
+	background: #f8fafc;
+	font-family: "Nunito", "Segoe UI", sans-serif;
+}
+
+.mission-container {
+	max-width: 1440px;
+	margin: 0 auto;
+	padding: 32px;
+}
+
+.mission-layout {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: 24px;
+}
+
+.mission-main,
+.mission-side {
+	display: grid;
+	gap: 20px;
+}
+
+.mission-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.mission-header h1 {
+	margin: 0;
+	color: #1f2937;
+	font-size: 40px;
+	line-height: 1.1;
+}
+
+.mission-header p {
+	margin: 6px 0 0;
+	color: #6b7280;
+}
+
+.add-mission-btn {
+	border: none;
+	background: #4a90e2;
+	color: #ffffff;
+	border-radius: 12px;
+	padding: 12px 18px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	font-size: 16px;
+	font-weight: 700;
+	box-shadow: 0 12px 20px rgba(74, 144, 226, 0.28);
+}
+
+.add-mission-btn:hover {
+	box-shadow: 0 14px 26px rgba(74, 144, 226, 0.35);
+}
+
+.mission-cards {
+	display: grid;
+	gap: 12px;
+}
+
+.mission-card {
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+	padding: 18px;
+	animation: rise-in 0.35s ease both;
+}
+
+.mission-top-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+}
+
+.mission-emoji {
+	font-size: 36px;
+	line-height: 1;
+}
+
+.mission-detail-block {
+	flex: 1;
+}
+
+.mission-title-row {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.mission-title-row h3 {
+	margin: 0;
+	color: #1f2937;
+	font-size: 22px;
+}
+
+.mission-meta {
+	margin-top: 4px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: #6b7280;
+	font-size: 14px;
+}
+
+.clock-wrap {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.mission-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.icon-btn {
+	width: 32px;
+	height: 32px;
+	border: none;
+	background: transparent;
+	color: #6b7280;
+	border-radius: 8px;
+	display: grid;
+	place-items: center;
+	cursor: pointer;
+}
+
+.icon-btn:hover {
+	background: #f8fafc;
+}
+
+.icon-btn.danger:hover {
+	background: #fee2e2;
+	color: #ef4444;
+}
+
+.icon-sm {
+	width: 18px;
+	height: 18px;
+}
+
+.icon-xs {
+	width: 14px;
+	height: 14px;
+}
+
+.mission-progress-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 8px;
+}
+
+.mission-progress-row strong {
+	color: #6b7280;
+	min-width: 42px;
+	font-size: 14px;
+}
+
+.progress-track {
+	width: 100%;
+	height: 8px;
+	border-radius: 999px;
+	overflow: hidden;
+	background: #e5e7eb;
+}
+
+.progress-fill {
+	height: 100%;
+	border-radius: 999px;
+	transition: width 0.4s ease;
+}
+
+.subtasks {
+	max-height: 0;
+	overflow: hidden;
+	opacity: 0;
+	transform: translateY(-4px);
+	transition: max-height 0.25s ease, opacity 0.22s ease, transform 0.22s ease;
+}
+
+.subtasks.expanded {
+	max-height: 420px;
+	opacity: 1;
+	transform: translateY(0);
+	border-top: 1px solid #e5e7eb;
+	margin-top: 8px;
+	padding-top: 10px;
+}
+
+.subtask-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 0;
+}
+
+.checkbox {
+	width: 20px;
+	height: 20px;
+	border-radius: 7px;
+	border: 2px solid #d1d5db;
+	background: transparent;
+	display: grid;
+	place-items: center;
+	cursor: pointer;
+}
+
+.checkbox:hover {
+	border-color: #4a90e2;
+}
+
+.checkbox.checked {
+	background: #6fcf97;
+	border-color: #6fcf97;
+	color: #ffffff;
+}
+
+.check-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.subtask-text {
+	color: #1f2937;
+	font-size: 14px;
+}
+
+.subtask-text.done {
+	color: #6b7280;
+	text-decoration: line-through;
+}
+
+.start-btn {
+	margin-top: 10px;
+	width: 100%;
+	border: none;
+	color: #ffffff;
+	border-radius: 12px;
+	padding: 11px 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	font-size: 15px;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: 0 8px 16px rgba(31, 41, 55, 0.15);
+}
+
+.panel {
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+	padding: 18px;
+}
+
+.panel h3 {
+	margin: 0 0 12px;
+	color: #1f2937;
+}
+
+.summary-list {
+	display: grid;
+	gap: 10px;
+}
+
+.summary-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	color: #6b7280;
+}
+
+.summary-row strong {
+	color: #1f2937;
+}
+
+.summary-row .green { color: #6fcf97; }
+.summary-row .blue { color: #4a90e2; }
+.summary-row .orange { color: #f2994a; }
+
+.panel.tip {
+	background: #4a90e2;
+	color: #ffffff;
+}
+
+.panel.tip h3,
+.panel.tip p {
+	color: #ffffff;
+	margin: 0;
+}
+
+.panel.tip p {
+	margin-top: 6px;
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.categories {
+	display: grid;
+	gap: 8px;
+}
+
+.cat-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px;
+	border-radius: 10px;
+}
+
+.cat-row:hover {
+	background: #f8fafc;
+}
+
+.cat-row > div {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: #1f2937;
+	font-size: 14px;
+}
+
+.cat-row strong {
+	color: #6b7280;
+	font-size: 14px;
+}
+
+.dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 999px;
+	display: inline-block;
+}
+
+.dot.math { background: #4a90e2; }
+.dot.language { background: #6fcf97; }
+.dot.science { background: #f2994a; }
+
+@media (max-width: 1120px) {
+	.mission-layout {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 760px) {
+	.mission-container {
+		padding: 16px;
+	}
+
+	.mission-header {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.mission-header h1 {
+		font-size: 32px;
+	}
+
+	.mission-title-row {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+}
+
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}

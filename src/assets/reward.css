@@ -1,0 +1,251 @@
+.reward-page {
+	min-height: 100vh;
+	background: #f2994a;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: "Nunito", "Segoe UI", sans-serif;
+	padding: 20px;
+	overflow: hidden;
+}
+
+.reward-container {
+	width: 100%;
+	max-width: 600px;
+	display: flex;
+	flex-direction: column;
+	gap: 40px;
+}
+
+.reward-hero {
+	text-align: center;
+}
+
+.trophy-emoji {
+	font-size: 96px;
+	margin-bottom: 16px;
+	display: block;
+}
+
+.reward-title {
+	margin: 0 0 8px;
+	color: #ffffff;
+	font-size: 48px;
+	font-weight: 800;
+	line-height: 1.1;
+}
+
+.reward-subtitle {
+	margin: 0;
+	color: rgba(255, 255, 255, 0.9);
+	font-size: 18px;
+	font-weight: 400;
+}
+
+.reward-card {
+	background: rgba(255, 255, 255, 0.15);
+	backdrop-filter: blur(10px);
+	border-radius: 24px;
+	padding: 32px;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.reward-section {
+	text-align: center;
+}
+
+.reward-section-title {
+	margin: 0 0 20px;
+	color: #ffffff;
+	font-size: 20px;
+	font-weight: 700;
+}
+
+.reward-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+}
+
+.reward-item {
+	background: #ffffff;
+	border-radius: 16px;
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+}
+
+.reward-icon {
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #ffffff;
+}
+
+.reward-icon.orange {
+	background: #f2994a;
+}
+
+.reward-icon.blue {
+	background: #4a90e2;
+}
+
+.reward-icon.green {
+	background: #6fcf97;
+}
+
+.reward-icon .icon {
+	width: 24px;
+	height: 24px;
+}
+
+.reward-value {
+	font-size: 24px;
+	font-weight: 800;
+	color: #1f2937;
+	margin: 0;
+	line-height: 1;
+}
+
+.reward-label {
+	font-size: 12px;
+	color: #6b7280;
+	margin: 0;
+	font-weight: 600;
+}
+
+.badge-unlock {
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 16px;
+	padding: 16px;
+	text-align: center;
+}
+
+.badge-emoji {
+	font-size: 32px;
+	margin-bottom: 8px;
+	display: block;
+}
+
+.badge-name {
+	color: #ffffff;
+	font-weight: 600;
+	font-size: 16px;
+	margin: 0 0 4px;
+}
+
+.badge-desc {
+	color: rgba(255, 255, 255, 0.8);
+	font-size: 12px;
+	margin: 0;
+}
+
+.button-group {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.reward-btn {
+	border: none;
+	border-radius: 16px;
+	padding: 16px;
+	font-size: 16px;
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	transition: box-shadow 0.2s ease, transform 0.18s ease;
+	font-family: "Nunito", "Segoe UI", sans-serif;
+}
+
+.reward-btn.primary {
+	background: #ffffff;
+	color: #f2994a;
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.reward-btn.primary:hover {
+	box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+}
+
+.reward-btn.secondary {
+	background: rgba(255, 255, 255, 0.2);
+	color: #ffffff;
+	backdrop-filter: blur(10px);
+}
+
+.reward-btn.secondary:hover {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+.reward-btn:active {
+	transform: scale(0.98);
+}
+
+.reward-btn .icon-sm {
+	width: 20px;
+	height: 20px;
+}
+
+@media (max-width: 600px) {
+	.reward-container {
+		gap: 24px;
+	}
+
+	.reward-card {
+		padding: 20px;
+		gap: 16px;
+	}
+
+	.trophy-emoji {
+		font-size: 72px;
+		margin-bottom: 12px;
+	}
+
+	.reward-title {
+		font-size: 36px;
+	}
+
+	.reward-subtitle {
+		font-size: 16px;
+	}
+
+	.reward-grid {
+		gap: 10px;
+	}
+
+	.reward-item {
+		padding: 12px;
+	}
+
+	.reward-value {
+		font-size: 20px;
+	}
+
+	.reward-label {
+		font-size: 11px;
+	}
+
+	.badge-emoji {
+		font-size: 28px;
+	}
+
+	.badge-name {
+		font-size: 14px;
+	}
+
+	.reward-btn {
+		padding: 14px;
+		font-size: 15px;
+	}
+}

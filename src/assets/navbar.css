@@ -1,0 +1,139 @@
+.fk-nav {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.fk-nav-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.fk-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fk-brand-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #4a90e2;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+}
+
+.fk-brand-name {
+  color: #1f2937;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.fk-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.fk-nav-items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fk-nav-btn {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 400;
+  transition: all 0.2s ease;
+}
+
+.fk-nav-btn:hover {
+  background: #f8fafe;
+  color: #2d3748;
+}
+
+.fk-nav-btn.active {
+  background: #4a90e2;
+  color: #ffffff;
+}
+
+.fk-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fk-user-text {
+  text-align: right;
+}
+
+.fk-user-text .name {
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.fk-user-text .level {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.fk-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #f2994a;
+  font-size: 24px;
+  box-shadow: 0 8px 14px rgba(242, 153, 74, 0.32);
+}
+
+@media (max-width: 1100px) {
+  .fk-nav-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .fk-user {
+    order: 3;
+  }
+}
+
+@media (max-width: 760px) {
+  .fk-nav-inner {
+    padding: 12px 16px;
+    align-items: flex-start;
+  }
+
+  .fk-brand-name {
+    font-size: 24px;
+  }
+
+  .fk-nav-items {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .fk-nav-btn {
+    white-space: nowrap;
+  }
+}
