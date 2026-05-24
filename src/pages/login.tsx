@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Mail, Globe, Award, Target, Trophy } from "lucide-react";
+import { Sparkles, Award, Target, Trophy, UserRound, Users } from "lucide-react";
 import "../assets/login.css";
 
 type Feature = {
@@ -17,9 +18,62 @@ const features: Feature[] = [
 
 export default function Login() {
 	const navigate = useNavigate();
+	const [role, setRole] = useState<"parent" | "child">("parent");
+	const [name, setName] = useState("");
+	const [email, setEmail] = useState("");
+	const [error, setError] = useState("");
+	const [loading, setLoading] = useState(false);
 
-	const handleLogin = () => {
-		navigate("/dashboard");
+	const goToRoleDashboard = (r: "parent" | "child") => {
+		navigate(r === "parent" ? "/parent/dashboard" : "/child/dashboard");
+	};
+
+	const handleLogin = async () => {
+		setLoading(true);
+		setError("");
+		try {
+			const res = await fetch("http://localhost:4000/api/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email, role }),
+			});
+			if (!res.ok) {
+				setError("Account not found. Please create an account.");
+				return;
+			}
+			const user = await res.json();
+			localStorage.setItem("focuskid_user", JSON.stringify(user));
+			goToRoleDashboard(role);
+		} catch (err) {
+			console.error(err);
+			setError("Login failed. Please try again.");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleCreateAccount = async () => {
+		setLoading(true);
+		setError("");
+		try {
+			const res = await fetch("http://localhost:4000/api/users", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name, email, role }),
+			});
+			if (!res.ok) {
+				setError("Account creation failed.");
+				return;
+			}
+			const user = await res.json();
+			localStorage.setItem("focuskid_user", JSON.stringify(user));
+			goToRoleDashboard(role);
+		} catch (err) {
+			console.error(err);
+			setError("Account creation failed. Please try again.");
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	return (
@@ -57,22 +111,34 @@ export default function Login() {
 					<div className="login-card">
 						<header className="card-header">
 							<h2>Welcome Back!</h2>
-							<p>Sign in to continue your learning adventure</p>
+							<p>Choose a role and sign in or create an account</p>
 						</header>
 
-						<div className="signin-actions">
-							<button type="button" onClick={handleLogin} className="social-btn">
-								<span className="social-icon">
-									<Globe className="svg-icon" />
-								</span>
-								<span>Sign in with Google</span>
+						<div className="role-switch">
+							<button type="button" className={role === "parent" ? "role-btn active" : "role-btn"} onClick={() => setRole("parent")}>
+								<Users className="svg-icon" /> Parent
 							</button>
+							<button type="button" className={role === "child" ? "role-btn active" : "role-btn"} onClick={() => setRole("child")}>
+								<UserRound className="svg-icon" /> Child
+							</button>
+						</div>
 
-							<button type="button" onClick={handleLogin} className="social-btn">
-								<span className="social-icon">
-									<Mail className="svg-icon" />
-								</span>
-								<span>Sign in with Email</span>
+						<div className="signin-form">
+							<label>
+								Name
+								<input value={name} onChange={(e) => setName(e.target.value)} placeholder={role === "parent" ? "Parent name" : "Child name"} />
+							</label>
+							<label>
+								Email
+								<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+							</label>
+						</div>
+
+						{error && <div className="error-text">{error}</div>}
+
+						<div className="signin-actions">
+							<button type="button" onClick={handleLogin} className="social-btn" disabled={loading}>
+								Sign in
 							</button>
 						</div>
 
@@ -80,16 +146,16 @@ export default function Login() {
 							<span>or</span>
 						</div>
 
-						<button type="button" onClick={handleLogin} className="primary-btn">
-							Start Learning
+						<button type="button" onClick={handleCreateAccount} className="primary-btn" disabled={loading}>
+							Create Account
 						</button>
 
 						<footer className="card-footer">
 							<button type="button" className="link-muted">
-								Forgot password?
+								Need help?
 							</button>
 							<button type="button" onClick={handleLogin} className="link-primary">
-								Create account
+								Sign in
 							</button>
 						</footer>
 					</div>

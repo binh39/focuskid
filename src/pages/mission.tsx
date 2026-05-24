@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
 	ChevronDown,
@@ -11,86 +11,21 @@ import {
 	Clock,
 } from "lucide-react";
 import NavBar from "../components/NavBar";
+import type { Mission } from "../types";
 import "../assets/mission.css";
-
-type Subtask = {
-	id: number;
-	title: string;
-	completed: boolean;
-};
-
-type MissionItem = {
-	id: number;
-	title: string;
-	icon: string;
-	color: string;
-	category: string;
-	time: string;
-	expanded: boolean;
-	subtasks: Subtask[];
-};
 
 export default function Mission() {
 	const navigate = useNavigate();
-	const [missions, setMissions] = useState<MissionItem[]>([
-		{
-			id: 1,
-			title: "Math Practice",
-			icon: "📐",
-			color: "#4A90E2",
-			category: "Mathematics",
-			time: "20 min",
-			expanded: false,
-			subtasks: [
-				{ id: 1, title: "Complete multiplication tables", completed: true },
-				{ id: 2, title: "Solve word problems (5 questions)", completed: true },
-				{ id: 3, title: "Practice fractions exercises", completed: false },
-			],
-		},
-		{
-			id: 2,
-			title: "Reading Time",
-			icon: "📚",
-			color: "#6FCF97",
-			category: "Language Arts",
-			time: "15 min",
-			expanded: false,
-			subtasks: [
-				{ id: 1, title: "Read Chapter 3", completed: false },
-				{ id: 2, title: "Write 3 vocabulary words", completed: false },
-				{ id: 3, title: "Answer comprehension questions", completed: false },
-			],
-		},
-		{
-			id: 3,
-			title: "Science Quiz",
-			icon: "🔬",
-			color: "#F2994A",
-			category: "Science",
-			time: "10 min",
-			expanded: false,
-			subtasks: [
-				{ id: 1, title: "Study plant parts diagram", completed: true },
-				{ id: 2, title: "Complete quiz on photosynthesis", completed: true },
-				{ id: 3, title: "Watch educational video", completed: true },
-				{ id: 4, title: "Review notes", completed: false },
-			],
-		},
-		{
-			id: 4,
-			title: "Writing Assignment",
-			icon: "✏️",
-			color: "#8AB4F8",
-			category: "Language Arts",
-			time: "25 min",
-			expanded: false,
-			subtasks: [
-				{ id: 1, title: "Brainstorm ideas", completed: false },
-				{ id: 2, title: "Write first draft", completed: false },
-				{ id: 3, title: "Proofread and edit", completed: false },
-			],
-		},
-	]);
+	const [missions, setMissions] = useState<(Mission & { expanded: boolean })[]>([]);
+
+	useEffect(() => {
+		fetch("http://localhost:4000/api/missions")
+			.then((r) => r.json())
+			.then((data: Mission[]) =>
+				setMissions(data.map((m) => ({ ...m, expanded: false }))),
+			)
+			.catch((e) => console.error(e));
+	}, []);
 
 	const toggleMission = (id: number) => {
 		setMissions((prev) => prev.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)));
@@ -111,14 +46,16 @@ export default function Mission() {
 		);
 	};
 
-	const getCompletionCount = (mission: MissionItem) => {
-		const completed = mission.subtasks.filter((s) => s.completed).length;
-		return `${completed}/${mission.subtasks.length}`;
+	const getCompletionCount = (mission: Mission) => {
+		const total = mission.subtasks?.length || 0;
+		const completed = mission.subtasks?.filter((s) => s.completed).length || 0;
+		return total === 0 ? "0/0" : `${completed}/${total}`;
 	};
 
-	const getCompletionPercentage = (mission: MissionItem) => {
-		const completed = mission.subtasks.filter((s) => s.completed).length;
-		return (completed / mission.subtasks.length) * 100;
+	const getCompletionPercentage = (mission: Mission) => {
+		const total = mission.subtasks?.length || 0;
+		const completed = mission.subtasks?.filter((s) => s.completed).length || 0;
+		return total === 0 ? 0 : (completed / total) * 100;
 	};
 
 	const summary = useMemo(() => {
@@ -142,27 +79,34 @@ export default function Mission() {
 								<h1>My Missions</h1>
 								<p>Manage and track your learning tasks</p>
 							</div>
-							<button type="button" className="add-mission-btn">
+							<button type="button" className="add-mission-btn" onClick={() => navigate("/parent")}
+								aria-label="Go to parent dashboard to assign missions">
 								<Plus className="icon-sm" />
-								<span>Add Mission</span>
+								<span>Go to Parent Dashboard</span>
 							</button>
 						</div>
 
 						<div className="mission-cards">
+							{missions.length === 0 && (
+								<div className="panel tip">
+									<h3>No missions yet</h3>
+									<p>Please ask a parent to assign a mission first.</p>
+								</div>
+							)}
 							{missions.map((mission, index) => (
 								<article className="mission-card" key={mission.id} style={{ animationDelay: `${index * 0.05}s` }}>
 									<div className="mission-top-row">
-										<div className="mission-emoji">{mission.icon}</div>
+										<div className="mission-emoji">{mission.icon || "📝"}</div>
 										<div className="mission-detail-block">
 											<div className="mission-title-row">
 												<div>
 													<h3>{mission.title}</h3>
 													<div className="mission-meta">
-														<span>{mission.category}</span>
+														<span>Assigned Task</span>
 														<span>•</span>
 														<span className="clock-wrap">
 															<Clock className="icon-xs" />
-															<span>{mission.time}</span>
+															<span>{mission.time_minutes ? `${mission.time_minutes} min` : mission.time}</span>
 														</span>
 													</div>
 												</div>
@@ -207,8 +151,8 @@ export default function Mission() {
 												<button
 													type="button"
 													className="start-btn"
-													style={{ backgroundColor: mission.color }}
-													onClick={() => navigate("/focus")}
+													style={{ backgroundColor: mission.color || "#8FB8A8" }}
+													onClick={() => navigate("/focus", { state: { mission } })}
 												>
 													<Play className="icon-xs" />
 													<span>Start This Mission</span>
@@ -249,33 +193,6 @@ export default function Mission() {
 							<p>
 								Break large tasks into smaller steps to make them easier to complete and track your progress better!
 							</p>
-						</div>
-
-						<div className="panel">
-							<h3>Categories</h3>
-							<div className="categories">
-								<div className="cat-row">
-									<div>
-										<span className="dot math" />
-										<span>Mathematics</span>
-									</div>
-									<strong>1</strong>
-								</div>
-								<div className="cat-row">
-									<div>
-										<span className="dot language" />
-										<span>Language Arts</span>
-									</div>
-									<strong>2</strong>
-								</div>
-								<div className="cat-row">
-									<div>
-										<span className="dot science" />
-										<span>Science</span>
-									</div>
-									<strong>1</strong>
-								</div>
-							</div>
 						</div>
 					</aside>
 				</div>

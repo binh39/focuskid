@@ -1,31 +1,44 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Pause, SkipForward } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Play, Pause, SkipForward, Check } from "lucide-react";
+import type { Mission, Subtask } from "../types";
 import "../assets/focus.css";
 
 export default function Focus() {
 	const navigate = useNavigate();
-	const [timeLeft, setTimeLeft] = useState(25 * 60);
+	const location = useLocation();
+	const state = (location && (location.state as { mission?: Mission })) || {};
+	const mission = state.mission || null;
+	const initialMinutes = mission?.time_minutes
+		? mission.time_minutes
+		: parseInt(String(mission?.time ?? "").replace(/[^0-9]/g, "")) || 25;
+	const focusDuration = initialMinutes * 60;
+	const [timeLeft, setTimeLeft] = useState(() => focusDuration);
 	const [isRunning, setIsRunning] = useState(false);
 	const [sessionType, setSessionType] = useState<"Focus" | "Break">("Focus");
+	const [subtasks, setSubtasks] = useState<Subtask[]>(() => (mission?.subtasks ? mission.subtasks.map((s) => ({ ...s })) : []));
+	const [showCongrats, setShowCongrats] = useState(false);
 
 	useEffect(() => {
 		let interval: ReturnType<typeof setInterval>;
-		if (isRunning && timeLeft > 0) {
+		if (isRunning) {
 			interval = setInterval(() => {
-				setTimeLeft((prev) => prev - 1);
+				setTimeLeft((prev) => {
+					if (prev <= 1) {
+						setIsRunning(false);
+						if (sessionType === "Focus") {
+							setSessionType("Break");
+							return 5 * 60;
+						}
+						navigate("/child/reward");
+						return 0;
+					}
+					return prev - 1;
+				});
 			}, 1000);
-		} else if (timeLeft === 0 && isRunning) {
-			setIsRunning(false);
-			if (sessionType === "Focus") {
-				setSessionType("Break");
-				setTimeLeft(5 * 60);
-			} else {
-				navigate("/reward");
-			}
 		}
 		return () => clearInterval(interval);
-	}, [isRunning, timeLeft, sessionType, navigate]);
+	}, [isRunning, sessionType, navigate]);
 
 	const formatTime = (seconds: number) => {
 		const mins = Math.floor(seconds / 60);
@@ -38,10 +51,21 @@ export default function Focus() {
 	};
 
 	const finishSession = () => {
-		navigate("/reward");
+		// Check subtasks completion
+		const allDone = subtasks.length > 0 && subtasks.every((s) => s.completed);
+		if (allDone) {
+			setShowCongrats(true);
+			setTimeout(() => navigate("/child/reward"), 1200);
+			return;
+		}
+		navigate("/child/reward");
 	};
 
-	const progress = ((sessionType === "Focus" ? 25 * 60 : 5 * 60) - timeLeft) / (sessionType === "Focus" ? 25 * 60 : 5 * 60) * 100;
+	const toggleSubtask = (id: number) => {
+		setSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s)));
+	};
+
+	const progress = ((sessionType === "Focus" ? focusDuration : 5 * 60) - timeLeft) / (sessionType === "Focus" ? focusDuration : 5 * 60) * 100;
 	const circumference = 2 * Math.PI * 180;
 	const strokeDashoffset = circumference * (1 - progress / 100);
 
@@ -49,7 +73,7 @@ export default function Focus() {
 		<div className="focus-page">
 			<div className="focus-container">
 				<header className="focus-header">
-					<button className="back-btn" onClick={() => navigate("/dashboard")}>
+					<button className="back-btn" onClick={() => navigate("/child/dashboard")}>
 						<ArrowLeft className="icon" />
 					</button>
 					<div className="session-badge">
@@ -60,8 +84,8 @@ export default function Focus() {
 
 				<div className="focus-content">
 					<div className="focus-intro">
-						<h2>Math Practice</h2>
-						<p>Stay focused and do your best!</p>
+						<h2>{mission?.title || "Math Practice"}</h2>
+						<p>{mission ? "Let's finish this mission step by step!" : "Stay focused and do your best!"}</p>
 					</div>
 
 					<div className="timer-circle">
@@ -102,10 +126,26 @@ export default function Focus() {
 							<SkipForward className="icon-sm" />
 							<span>Finish Session</span>
 						</button>
-						<button className="action-btn back-btn-alt" onClick={() => navigate("/dashboard")}>
+						<button className="action-btn back-btn-alt" onClick={() => navigate("/child/dashboard")}>
 							<span>Go Back</span>
 						</button>
 					</div>
+
+					{subtasks && subtasks.length > 0 && (
+						<div className="subtasks-panel">
+							<h4>Steps</h4>
+							{subtasks.map((s) => (
+								<div key={s.id} className="child-subtask-row">
+									<button className={`checkbox ${s.completed ? "checked" : ""}`} onClick={() => toggleSubtask(s.id)}>
+										{s.completed && <Check className="check-icon" />}
+									</button>
+									<span className={s.completed ? "subtask-text done" : "subtask-text"}>{s.title}</span>
+								</div>
+							))}
+						</div>
+					)}
+
+					{showCongrats && <div className="congrats-banner">Great job! 🎉</div>}
 				</div>
 			</div>
 		</div>

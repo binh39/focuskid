@@ -2,7 +2,7 @@
 
 .login-page {
 	min-height: 100vh;
-	background: #4a90e2;
+	background: #6A8F8C;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -147,6 +147,60 @@
 	gap: 12px;
 }
 
+.role-switch {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+	margin-bottom: 16px;
+}
+
+.role-btn {
+	border: 2px solid #e5e7eb;
+	border-radius: 12px;
+	padding: 10px 12px;
+	background: #ffffff;
+	cursor: pointer;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	color: #1f2937;
+	transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.role-btn.active {
+	border-color: #6A8F8C;
+	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.12);
+}
+
+.signin-form {
+	display: grid;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.signin-form label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-weight: 600;
+	color: #1f2937;
+}
+
+.signin-form input {
+	border-radius: 12px;
+	border: 1px solid #e5e7eb;
+	padding: 12px 14px;
+	font-size: 14px;
+}
+
+.error-text {
+	color: #b91c1c;
+	font-size: 13px;
+	margin-bottom: 10px;
+}
+
 .social-btn,
 .primary-btn {
 	width: 100%;
@@ -171,7 +225,7 @@
 }
 
 .social-btn:hover {
-	border-color: #4a90e2;
+	border-color: #6A8F8C;
 	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.12);
 	transform: translateY(-1px);
 }
@@ -182,7 +236,7 @@
 	border-radius: 999px;
 	display: grid;
 	place-items: center;
-	color: #4a90e2;
+	color: #6A8F8C;
 }
 
 .divider {
@@ -209,7 +263,7 @@
 }
 
 .primary-btn {
-	background: #4a90e2;
+	background: #6A8F8C;
 	color: #ffffff;
 	box-shadow: 0 12px 22px rgba(74, 144, 226, 0.35);
 }
@@ -240,11 +294,11 @@
 }
 
 .link-muted:hover {
-	color: #4a90e2;
+	color: #6A8F8C;
 }
 
 .link-primary {
-	color: #4a90e2;
+	color: #6A8F8C;
 }
 
 .link-primary:hover {

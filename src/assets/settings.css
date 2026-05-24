@@ -5,6 +5,10 @@
 }
 
 .settings-container {
+	font-family: "Nunito", "Segoe UI", sans-serif;
+}
+
+.settings-container {
 	max-width: 1440px;
 	margin: 0 auto;
 	padding: 32px;
@@ -59,7 +63,7 @@
 .icon {
 	width: 20px;
 	height: 20px;
-	color: #4a90e2;
+	color: #6A8F8C;
 }
 
 .icon-sm {
@@ -91,8 +95,8 @@
 	cursor: pointer;
 }
 
-.range.blue { accent-color: #4a90e2; }
-.range.green { accent-color: #6fcf97; }
+.range.blue { accent-color: #6A8F8C; }
+.range.green { accent-color: #8FB8A8; }
 
 .range-value {
 	min-width: 86px;
@@ -148,7 +152,7 @@
 }
 
 .toggle-icon.enabled {
-	background: #4a90e2;
+	background: #6A8F8C;
 	color: #ffffff;
 }
 
@@ -187,7 +191,7 @@
 }
 
 .switch.active {
-	background: #4a90e2;
+	background: #6A8F8C;
 }
 
 .switch.active span {
@@ -212,7 +216,7 @@
 }
 
 .summary-list .ok {
-	color: #6fcf97;
+	color: #8FB8A8;
 }
 
 .summary-list .muted {
@@ -220,7 +224,7 @@
 }
 
 .tip-card {
-	background: #6fcf97;
+	background: #8FB8A8;
 	border-radius: 16px;
 	box-shadow: 0 8px 16px rgba(111, 207, 151, 0.3);
 	padding: 20px;

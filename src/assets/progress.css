@@ -5,6 +5,10 @@
 }
 
 .progress-container {
+	font-family: "Nunito", "Segoe UI", sans-serif;
+}
+
+.progress-container {
 	max-width: 1440px;
 	margin: 0 auto;
 	padding: 32px;
@@ -24,7 +28,7 @@
 .metric-grid {
 	margin-top: 24px;
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
+	grid-template-columns: repeat(3, 1fr);
 	gap: 16px;
 }
 
@@ -46,10 +50,10 @@
 	margin-bottom: 14px;
 }
 
-.metric-icon.blue { background: #4a90e2; }
-.metric-icon.green { background: #6fcf97; }
-.metric-icon.orange { background: #f2994a; }
-.metric-icon.sky { background: #8ab4f8; }
+.metric-icon.blue { background: #6A8F8C; }
+.metric-icon.green { background: #8FB8A8; }
+.metric-icon.orange { background: #C9A86A; }
+.metric-icon.sky { background: #8AA3C9; }
 
 .icon {
 	width: 24px;
@@ -76,23 +80,141 @@
 
 .metric-card small {
 	margin-top: 10px;
-	color: #6fcf97;
+	color: #8FB8A8;
 	font-size: 12px;
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
 }
 
-.main-grid {
+/* ProgressView layout */
+.progress-chart {
+	margin-top: 24px;
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+	padding: 20px;
+}
+
+.section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.section-header h2 {
+	margin: 0;
+	font-size: 22px;
+	color: #1f2937;
+}
+
+.section-header button {
+	border: none;
+	background: #f1f5f9;
+	color: #1f2937;
+	border-radius: 999px;
+	padding: 8px 12px;
+	cursor: pointer;
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.chart-wrap {
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	padding: 12px;
+}
+
+.chart-svg {
+	width: 100%;
+	height: 220px;
+}
+
+.trend-line {
+	fill: none;
+	stroke: #6A8F8C;
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.chart-labels {
+	margin-top: 6px;
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	color: #6b7280;
+	font-size: 12px;
+	text-align: center;
+}
+
+.details-grid {
+	margin-top: 12px;
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+}
+
+.details-grid div {
+	background: #f8fafc;
+	border-radius: 12px;
+	padding: 12px;
+}
+
+.details-grid h3 {
+	margin: 0 0 4px;
+	color: #1f2937;
+}
+
+.details-grid p {
+	margin: 0;
+	color: #6b7280;
+	font-size: 13px;
+}
+
+.progress-grid {
 	margin-top: 24px;
 	display: grid;
-	grid-template-columns: 2fr 1fr;
+	grid-template-columns: 1fr 1fr;
 	gap: 24px;
+}
+
+.panel {
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+	padding: 20px;
+}
+
+.panel h2 {
+	margin: 0 0 10px;
+	color: #1f2937;
+	font-size: 20px;
+}
+
+.panel-list {
+	display: grid;
+	gap: 10px;
+}
+
+.panel-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	color: #6b7280;
+	font-size: 14px;
+}
+
+.panel-row strong {
+	color: #1f2937;
 }
 
 .glance-card {
 	margin-top: 24px;
-	border: 1px solid #dbeafe;
+	border: 1px solid #dfe7e9;
 	box-shadow: 0 8px 16px rgba(74, 144, 226, 0.12);
 }
 
@@ -119,9 +241,9 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	border: 1px solid #bfdbfe;
-	background: #eff6ff;
-	color: #1d4ed8;
+	border: 1px solid #c9d7da;
+	background: #eef2f3;
+	color: #4b6b7a;
 	font-weight: 700;
 	font-size: 14px;
 	border-radius: 10px;
@@ -131,9 +253,9 @@
 }
 
 .detail-toggle-btn:hover {
-	background: #dbeafe;
-	border-color: #93c5fd;
-	color: #1e40af;
+	background: #dfe7e9;
+	border-color: #b5c8ce;
+	color: #455f73;
 }
 
 .detail-chevron {
@@ -152,8 +274,8 @@
 }
 
 .glance-item {
-	background: #eff6ff;
-	border: 1px solid #dbeafe;
+	background: #eef2f3;
+	border: 1px solid #dfe7e9;
 	border-radius: 12px;
 	padding: 14px;
 	display: grid;
@@ -166,13 +288,13 @@
 }
 
 .glance-item strong {
-	color: #1e3a8a;
+	color: #405a6f;
 	font-size: 24px;
 	line-height: 1.1;
 }
 
 .glance-item small {
-	color: #2563eb;
+	color: #5a7a8c;
 	font-size: 12px;
 }
 
@@ -214,14 +336,14 @@
 
 .line-chart polyline {
 	fill: none;
-	stroke: #4a90e2;
+	stroke: #6A8F8C;
 	stroke-width: 3;
 	stroke-linecap: round;
 	stroke-linejoin: round;
 }
 
 .line-chart circle {
-	fill: #4a90e2;
+	fill: #6A8F8C;
 }
 
 .x-labels {
@@ -257,11 +379,11 @@
 }
 
 .kv-list .green {
-	color: #6fcf97;
+	color: #8FB8A8;
 }
 
 .motivate-card {
-	background: #6fcf97;
+	background: #8FB8A8;
 	border-radius: 16px;
 	color: #ffffff;
 	padding: 20px;
@@ -327,8 +449,8 @@
 	border-radius: 999px;
 }
 
-.bar-fill.blue { background: #4a90e2; }
-.bar-fill.green { background: #6fcf97; }
+.bar-fill.blue { background: #6A8F8C; }
+.bar-fill.green { background: #8FB8A8; }
 
 @media (max-width: 1200px) {
 	.metric-grid {
@@ -339,11 +461,11 @@
 		grid-template-columns: 1fr;
 	}
 
-	.main-grid {
+	.details-grid {
 		grid-template-columns: 1fr;
 	}
 
-	.bottom-grid {
+	.progress-grid {
 		grid-template-columns: 1fr;
 	}
 }

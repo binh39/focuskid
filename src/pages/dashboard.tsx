@@ -1,56 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Flame, Star, Trophy, Check, Play, Zap, ChevronDown, ChevronRight } from "lucide-react";
 import NavBar from "../components/NavBar";
+import AssignMission from "../components/AssignMission";
+import type { Mission, Subtask } from "../types";
 import "../assets/dashboard.css";
 
 export default function Dashboard() {
 	const navigate = useNavigate();
 	const [expandedMissionId, setExpandedMissionId] = useState<number | null>(null);
 	const [expandStats, setExpandStats] = useState(false);
+	const [showAssign, setShowAssign] = useState(false);
 
-	const missions = [
-		{
-			id: 1,
-			title: "Math Practice",
-			icon: "📐",
-			progress: 60,
-			color: "#4A90E2",
-			time: "20 min",
-			subtasks: [
-				{ id: 1, title: "Complete multiplication tables", completed: true },
-				{ id: 2, title: "Solve word problems (5 questions)", completed: true },
-				{ id: 3, title: "Practice fractions exercises", completed: false },
-			],
-		},
-		{
-			id: 2,
-			title: "Reading Time",
-			icon: "📚",
-			progress: 30,
-			color: "#6FCF97",
-			time: "15 min",
-			subtasks: [
-				{ id: 1, title: "Read Chapter 3", completed: false },
-				{ id: 2, title: "Write 3 vocabulary words", completed: false },
-				{ id: 3, title: "Answer comprehension questions", completed: false },
-			],
-		},
-		{
-			id: 3,
-			title: "Science Quiz",
-			icon: "🔬",
-			progress: 80,
-			color: "#F2994A",
-			time: "10 min",
-			subtasks: [
-				{ id: 1, title: "Study plant parts diagram", completed: true },
-				{ id: 2, title: "Complete quiz on photosynthesis", completed: true },
-				{ id: 3, title: "Watch educational video", completed: true },
-				{ id: 4, title: "Review notes", completed: false },
-			],
-		},
-	];
+	const [missions, setMissions] = useState<Mission[]>([]);
+
+	useEffect(() => {
+		fetch("http://localhost:4000/api/missions")
+			.then((r) => r.json())
+			.then((data: Mission[]) => setMissions(data))
+			.catch((e) => console.error(e));
+	}, []);
+
+	const handleCreateMission = (m: Mission) => {
+		setMissions((prev) => [m, ...prev]);
+	};
 
 	return (
 		<div className="dashboard-page">
@@ -73,9 +46,14 @@ export default function Dashboard() {
 						<div className="missions-block">
 							<div className="title-row">
 								<h2 className="missions-heading">Today's Missions</h2>
-								<button type="button" onClick={() => navigate("/mission")} className="link-btn">
-									View all missions →
-								</button>
+								<div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+									<button type="button" onClick={() => setShowAssign(true)} className="link-btn">
+										Assign Mission
+									</button>
+									<button type="button" onClick={() => navigate("/mission")} className="link-btn">
+										View all missions →
+									</button>
+								</div>
 							</div>
 
 							<div className="mission-list">
@@ -115,7 +93,7 @@ export default function Dashboard() {
 
 										{expandedMissionId === mission.id && (
 											<div className="mission-subtasks">
-												{mission.subtasks.map((subtask) => (
+												{mission.subtasks.map((subtask: Subtask) => (
 													<div className="subtask-row" key={subtask.id}>
 														<button type="button" className={`checkbox ${subtask.completed ? "checked" : ""}`}>
 															{subtask.completed && <Check className="check-icon" />}
@@ -127,7 +105,7 @@ export default function Dashboard() {
 													type="button"
 													className="start-btn"
 													style={{ backgroundColor: mission.color }}
-													onClick={() => navigate("/focus")}
+													onClick={() => navigate("/focus", { state: { mission } })}
 												>
 													<Play className="icon-xs" />
 													<span>Start This Mission</span>
@@ -207,6 +185,8 @@ export default function Dashboard() {
 					</aside>
 				</div>
 			</main>
+
+			{showAssign && <AssignMission onClose={() => setShowAssign(false)} onCreate={handleCreateMission} />}
 		</div>
 	);
 }

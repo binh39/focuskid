@@ -1,6 +1,6 @@
 .reward-page {
 	min-height: 100vh;
-	background: #f2994a;
+	background: #C9A86A;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -90,15 +90,15 @@
 }
 
 .reward-icon.orange {
-	background: #f2994a;
+	background: #C9A86A;
 }
 
 .reward-icon.blue {
-	background: #4a90e2;
+	background: #6A8F8C;
 }
 
 .reward-icon.green {
-	background: #6fcf97;
+	background: #8FB8A8;
 }
 
 .reward-icon .icon {
@@ -170,7 +170,7 @@
 
 .reward-btn.primary {
 	background: #ffffff;
-	color: #f2994a;
+	color: #C9A86A;
 	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
 }
 

@@ -26,7 +26,7 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: #4a90e2;
+  background: #6A8F8C;
   display: grid;
   place-items: center;
   color: #ffffff;
@@ -66,12 +66,12 @@
 }
 
 .fk-nav-btn:hover {
-  background: #f8fafe;
+  background: #f4f6f6;
   color: #2d3748;
 }
 
 .fk-nav-btn.active {
-  background: #4a90e2;
+  background: #6A8F8C;
   color: #ffffff;
 }
 
@@ -79,6 +79,23 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.fk-logout {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.fk-logout:hover {
+  background: #f8fafc;
 }
 
 .fk-user-text {
@@ -101,7 +118,7 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: #f2994a;
+  background: #C9A86A;
   font-size: 24px;
   box-shadow: 0 8px 14px rgba(242, 153, 74, 0.32);
 }

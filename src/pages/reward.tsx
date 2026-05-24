@@ -18,14 +18,14 @@ export default function Reward() {
 				angle: 60,
 				spread: 55,
 				origin: { x: 0 },
-				colors: ["#4A90E2", "#6FCF97", "#F2994A", "#8AB4F8"],
+				colors: ["#6A8F8C", "#8FB8A8", "#C9A86A", "#8AA3C9"],
 			});
 			confetti({
 				particleCount: 2,
 				angle: 120,
 				spread: 55,
 				origin: { x: 1 },
-				colors: ["#4A90E2", "#6FCF97", "#F2994A", "#8AB4F8"],
+				colors: ["#6A8F8C", "#8FB8A8", "#C9A86A", "#8AA3C9"],
 			});
 
 			if (Date.now() < end) {
@@ -132,7 +132,7 @@ export default function Reward() {
 							transition={{ delay: 1.6 }}
 							whileHover={{ scale: 1.02 }}
 							whileTap={{ scale: 0.98 }}
-							onClick={() => navigate("/dashboard")}
+							onClick={() => navigate("/child/dashboard")}
 							className="reward-btn primary"
 						>
 							<span>Continue</span>
@@ -145,7 +145,7 @@ export default function Reward() {
 							transition={{ delay: 1.7 }}
 							whileHover={{ scale: 1.02 }}
 							whileTap={{ scale: 0.98 }}
-							onClick={() => navigate("/dashboard")}
+							onClick={() => navigate("/child/dashboard")}
 							className="reward-btn secondary"
 						>
 							Back to Dashboard
