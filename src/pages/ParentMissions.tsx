@@ -3,7 +3,7 @@ import { Check, ChevronDown, ChevronUp, Clock, FileText, HelpCircle, Plus, Trash
 import ParentNavBar from "../components/ParentNavBar";
 import AssignMission from "../components/AssignMission";
 import type { Mission, MissionFile, MissionQuiz, QuizOption } from "../types";
-import { getMissionProgress } from "../utils/missionProgress";
+import { getFileTimeLabel, getMissionProgress, getMissionTimeLabel } from "../utils/missionProgress";
 import "../assets/mission.css";
 
 type MissionWithExpanded = Mission & { expanded: boolean };
@@ -18,6 +18,11 @@ type QuizDraft = {
 };
 
 type QuizField = keyof QuizDraft;
+
+type FileDraft = {
+  file: File;
+  time_minutes: string;
+};
 
 const createEmptyQuiz = (): QuizDraft => ({
   question: "",
@@ -38,7 +43,7 @@ const isQuizReady = (quiz: QuizDraft) =>
 export default function ParentMissions() {
   const [missions, setMissions] = useState<MissionWithExpanded[]>([]);
   const [showAssign, setShowAssign] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<Record<number, File[]>>({});
+  const [pendingFileDrafts, setPendingFileDrafts] = useState<Record<number, FileDraft[]>>({});
   const [quizDrafts, setQuizDrafts] = useState<Record<number, QuizDraft>>({});
   const [uploadingMissionId, setUploadingMissionId] = useState<number | null>(null);
   const [savingQuizMissionId, setSavingQuizMissionId] = useState<number | null>(null);
@@ -60,9 +65,23 @@ export default function ParentMissions() {
   };
 
   const handleFileSelection = (missionId: number, fileList: FileList | null) => {
-    setPendingFiles((prev) => ({
+    setPendingFileDrafts((prev) => ({
       ...prev,
-      [missionId]: fileList ? Array.from(fileList) : [],
+      [missionId]: fileList
+        ? Array.from(fileList).map((file) => ({
+            file,
+            time_minutes: "15",
+          }))
+        : [],
+    }));
+  };
+
+  const handleFileDurationChange = (missionId: number, index: number, value: string) => {
+    setPendingFileDrafts((prev) => ({
+      ...prev,
+      [missionId]: (prev[missionId] || []).map((draft, draftIndex) =>
+        draftIndex === index ? { ...draft, time_minutes: value } : draft,
+      ),
     }));
   };
 
@@ -80,14 +99,15 @@ export default function ParentMissions() {
   };
 
   const handleAddFiles = async (missionId: number) => {
-    const files = pendingFiles[missionId] || [];
-    if (files.length === 0) return;
+    const fileDrafts = pendingFileDrafts[missionId] || [];
+    if (fileDrafts.length === 0) return;
 
     setUploadingMissionId(missionId);
 
     try {
       const form = new FormData();
-      files.forEach((file) => form.append("files", file));
+      form.append("file_durations", JSON.stringify(fileDrafts.map((draft) => Number(draft.time_minutes) || 15)));
+      fileDrafts.forEach((draft) => form.append("files", draft.file));
 
       const res = await fetch(`http://localhost:4000/api/missions/${missionId}/files`, {
         method: "POST",
@@ -101,7 +121,7 @@ export default function ParentMissions() {
           mission.id === missionId ? { ...mission, files: json.files, expanded: true } : mission,
         ),
       );
-      setPendingFiles((prev) => {
+      setPendingFileDrafts((prev) => {
         const next = { ...prev };
         delete next[missionId];
         return next;
@@ -219,7 +239,7 @@ export default function ParentMissions() {
                 const progress = getMissionProgress(mission);
                 const files = mission.files || [];
                 const quizzes = mission.quizzes || [];
-                const selectedFiles = pendingFiles[mission.id] || [];
+                const selectedFiles = pendingFileDrafts[mission.id] || [];
                 const quizDraft = quizDrafts[mission.id] || createEmptyQuiz();
                 const isUploading = uploadingMissionId === mission.id;
                 const isSavingQuiz = savingQuizMissionId === mission.id;
@@ -237,7 +257,7 @@ export default function ParentMissions() {
                               <span>-</span>
                               <span className="clock-wrap">
                                 <Clock className="icon-xs" />
-                                <span>{mission.time_minutes ? `${mission.time_minutes} min` : mission.time || "No limit"}</span>
+                                <span>{getMissionTimeLabel(mission)}</span>
                               </span>
                             </div>
                           </div>
@@ -271,6 +291,7 @@ export default function ParentMissions() {
                                   <FileText className="icon-xs file-icon" />
                                   <span className={file.completed ? "subtask-text done file-name" : "subtask-text file-name"}>
                                     {file.original_name}
+                                    <small> {getFileTimeLabel(file, mission)}</small>
                                   </span>
                                   <button
                                     type="button"
@@ -331,6 +352,31 @@ export default function ParentMissions() {
                               {isUploading ? "Uploading..." : "Add Files"}
                             </button>
                           </div>
+
+                          {selectedFiles.length > 0 && (
+                            <div className="file-draft-list inline">
+                              {selectedFiles.map((draft, draftIndex) => (
+                                <div
+                                  className="file-draft-row"
+                                  key={`${draft.file.name}-${draft.file.size}-${draft.file.lastModified}`}
+                                >
+                                  <span>{draft.file.name}</span>
+                                  <label>
+                                    Minutes
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={240}
+                                      value={draft.time_minutes}
+                                      onChange={(event) =>
+                                        handleFileDurationChange(mission.id, draftIndex, event.target.value)
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           <div className="inline-quiz-editor">
                             <div className="mission-section-title">Add Quiz</div>

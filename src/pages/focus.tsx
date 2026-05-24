@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Play, Pause, SkipForward, Check } from "lucide-react";
 import type { Mission, Subtask } from "../types";
+import { awardXp } from "../utils/rewards";
 import "../assets/focus.css";
 
 export default function Focus() {
@@ -18,6 +19,8 @@ export default function Focus() {
 	const [sessionType, setSessionType] = useState<"Focus" | "Break">("Focus");
 	const [subtasks, setSubtasks] = useState<Subtask[]>(() => (mission?.subtasks ? mission.subtasks.map((s) => ({ ...s })) : []));
 	const [showCongrats, setShowCongrats] = useState(false);
+	const timerRewardClaimedRef = useRef(false);
+	const timerRewardEventKeyRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		let interval: ReturnType<typeof setInterval>;
@@ -39,6 +42,17 @@ export default function Focus() {
 		}
 		return () => clearInterval(interval);
 	}, [isRunning, sessionType, navigate]);
+
+	useEffect(() => {
+		if (sessionType !== "Break" || timerRewardClaimedRef.current) return;
+
+		timerRewardClaimedRef.current = true;
+		if (!timerRewardEventKeyRef.current) {
+			timerRewardEventKeyRef.current = `timer:focus:${mission?.id || "free"}:${Date.now()}`;
+		}
+
+		awardXp(30, "Completed focus timer", timerRewardEventKeyRef.current).catch((e) => console.error(e));
+	}, [mission?.id, sessionType]);
 
 	const formatTime = (seconds: number) => {
 		const mins = Math.floor(seconds / 60);

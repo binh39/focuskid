@@ -361,6 +361,44 @@
 	overflow-wrap: anywhere;
 }
 
+.file-draft-list {
+	display: grid;
+	gap: 8px;
+}
+
+.file-draft-list.inline {
+	margin-top: 8px;
+}
+
+.file-draft-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 120px;
+	align-items: end;
+	gap: 10px;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	background: #f8fafc;
+	padding: 10px;
+}
+
+.file-draft-row > span {
+	min-width: 0;
+	color: #1f2937;
+	font-size: 13px;
+	font-weight: 800;
+	overflow-wrap: anywhere;
+}
+
+.file-draft-row label {
+	color: #6b7280;
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.file-draft-row input {
+	width: 100%;
+}
+
 .modal-overlay {
 	position: fixed;
 	inset: 0;
@@ -613,6 +651,15 @@
 	font-weight: 700;
 }
 
+.file-name-btn small {
+	display: inline-block;
+	margin-left: 6px;
+	color: #6b7280;
+	font-size: 12px;
+	font-weight: 800;
+	text-decoration: none;
+}
+
 .subtask-text {
 	color: #1f2937;
 	font-size: 14px;
@@ -756,6 +803,10 @@
 	}
 
 	.add-files-row {
+		grid-template-columns: 1fr;
+	}
+
+	.file-draft-row {
 		grid-template-columns: 1fr;
 	}
 

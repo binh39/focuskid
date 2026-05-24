@@ -2,6 +2,75 @@
   min-height: 100vh;
 }
 
+.reward-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 120;
+  min-width: min(360px, calc(100vw - 32px));
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  background: linear-gradient(135deg, #044b37 0%, #6A8F8C 58%, #C9A86A 100%);
+  color: #ffffff;
+  box-shadow: 0 24px 64px rgba(4, 75, 55, 0.36);
+  padding: 26px 28px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 900;
+  transform: translate(-50%, -50%);
+  animation: reward-pop 0.42s ease both, reward-glow 1.6s ease-in-out infinite alternate;
+}
+
+.reward-toast::before {
+  content: "Reward";
+  display: block;
+  margin: 0 auto 10px;
+  width: max-content;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.reward-toast-icon {
+  display: block;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 10px;
+}
+
+.reward-toast span,
+.reward-toast strong {
+  display: block;
+}
+
+.reward-toast strong {
+  margin-top: 4px;
+  font-size: 22px;
+}
+
+@keyframes reward-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes reward-glow {
+  from {
+    box-shadow: 0 24px 64px rgba(4, 75, 55, 0.28);
+  }
+  to {
+    box-shadow: 0 30px 80px rgba(201, 168, 106, 0.42);
+  }
+}
+
 .reader-container {
   max-width: 1440px;
   margin: 0 auto;
@@ -301,6 +370,16 @@
   font-size: 13px;
 }
 
+.timer-empty {
+  border-radius: 12px;
+  background: #eef6f2;
+  color: #315f55;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .reader-file-list {
   display: grid;
   gap: 8px;
@@ -324,6 +403,23 @@
 
 .reader-file-item span {
   overflow-wrap: anywhere;
+}
+
+.reader-file-item strong,
+.reader-file-item small {
+  display: block;
+}
+
+.reader-file-item strong {
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.reader-file-item small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .reader-file-item.active {

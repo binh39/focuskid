@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, ChevronDown, ChevronUp, Clock, FileText, HelpCircle, Play } from "lucide-react";
 import ChildNavBar from "../components/ChildNavBar";
 import type { Mission, MissionFile } from "../types";
-import { getMissionProgress, getMissionStartItem } from "../utils/missionProgress";
+import { getFileTimeLabel, getMissionProgress, getMissionStartItem, getMissionTimeLabel } from "../utils/missionProgress";
 import "../assets/mission.css";
 
 type MissionWithExpanded = Mission & { expanded: boolean };
@@ -118,7 +118,7 @@ export default function ChildMissions() {
                               <span>-</span>
                               <span className="clock-wrap">
                                 <Clock className="icon-xs" />
-                                <span>{mission.time_minutes ? `${mission.time_minutes} min` : mission.time}</span>
+                                <span>{getMissionTimeLabel(mission)}</span>
                               </span>
                             </div>
                           </div>
@@ -161,6 +161,7 @@ export default function ChildMissions() {
                                     onClick={() => openFile(mission, file)}
                                   >
                                     {file.original_name}
+                                    <small> {getFileTimeLabel(file, mission)}</small>
                                   </button>
                                   <button type="button" className="file-action-btn" onClick={() => openFile(mission, file)}>
                                     Read

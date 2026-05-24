@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { Award, Calendar, ChevronDown, Clock, Target, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Calendar, ChevronDown, Clock, Target, TrendingUp, Zap } from "lucide-react";
+import RankIcon from "./RankIcon";
+import type { User } from "../types";
+import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
 import "../assets/progress.css";
 
 const weeklyData = [
@@ -44,11 +47,19 @@ function buildLinePoints(max: number): string {
 
 export default function ProgressView() {
   const [showDetails, setShowDetails] = useState(false);
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
   const maxWeekly = Math.max(...weeklyData.map((x) => x.minutes));
   const linePoints = buildLinePoints(maxWeekly);
   const weeklyAverage = Math.round(weeklyData.reduce((sum, item) => sum + item.minutes, 0) / weeklyData.length);
   const bestDay = weeklyData.reduce((best, item) => (item.minutes > best.minutes ? item : best), weeklyData[0]);
   const topSubject = missionData.reduce((best, item) => (item.completed > best.completed ? item : best), missionData[0]);
+  const rewardProfile = getRewardProfile(user?.xp || 0);
+
+  useEffect(() => {
+    fetchCurrentUser()
+      .then((latestUser) => setUser(latestUser))
+      .catch((e) => console.error(e));
+  }, []);
 
   return (
     <div className="progress-page">
@@ -82,15 +93,25 @@ export default function ProgressView() {
           </article>
 
           <article className="metric-card">
-            <div className="metric-icon orange">
-              <Award className="icon" />
+            <div className="metric-icon orange" style={{ backgroundColor: rewardProfile.rank.color }}>
+              <RankIcon rank={rewardProfile.rank} className="icon" />
             </div>
-            <h2>18</h2>
-            <p>Badges Earned</p>
+            <h2>{rewardProfile.rank.name}</h2>
+            <p>Current Rank</p>
             <small>
-              <Calendar className="icon-xs" /> 3 this month
+              <Calendar className="icon-xs" /> {rewardProfile.xp} XP
             </small>
           </article>
+        </section>
+
+        <section className="progress-chart">
+          <header className="section-header">
+            <h2>Rank Progress</h2>
+            <span>{rewardProfile.nextRank ? `${rewardProfile.xpToNextRank} XP to ${rewardProfile.nextRank.name}` : "Top rank reached"}</span>
+          </header>
+          <div className="progress-track">
+            <div className="bar-fill blue" style={{ width: `${rewardProfile.rankProgress}%`, backgroundColor: rewardProfile.rank.color }} />
+          </div>
         </section>
 
         <section className="progress-chart">

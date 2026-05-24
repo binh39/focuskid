@@ -17,6 +17,11 @@ type QuizDraft = {
 
 type QuizField = keyof QuizDraft;
 
+type FileDraft = {
+  file: File;
+  time_minutes: string;
+};
+
 const createEmptyQuiz = (): QuizDraft => ({
   question: "",
   option_a: "",
@@ -35,9 +40,8 @@ const isQuizReady = (quiz: QuizDraft) =>
 
 export default function AssignMission({ onClose, onCreate }: Props) {
   const [title, setTitle] = useState("");
-  const [time, setTime] = useState("15");
   const [quizzes, setQuizzes] = useState<QuizDraft[]>([createEmptyQuiz()]);
-  const [files, setFiles] = useState<File[]>([]);
+  const [fileDrafts, setFileDrafts] = useState<FileDraft[]>([]);
   const [loading, setLoading] = useState(false);
 
   const updateQuiz = (index: number, field: QuizField, value: string) => {
@@ -56,6 +60,23 @@ export default function AssignMission({ onClose, onCreate }: Props) {
     setQuizzes((prev) => (prev.length === 1 ? [createEmptyQuiz()] : prev.filter((_, quizIndex) => quizIndex !== index)));
   };
 
+  const handleFileSelection = (fileList: FileList | null) => {
+    setFileDrafts(
+      fileList
+        ? Array.from(fileList).map((file) => ({
+            file,
+            time_minutes: "15",
+          }))
+        : [],
+    );
+  };
+
+  const updateFileDuration = (index: number, value: string) => {
+    setFileDrafts((prev) =>
+      prev.map((draft, draftIndex) => (draftIndex === index ? { ...draft, time_minutes: value } : draft)),
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -63,14 +84,14 @@ export default function AssignMission({ onClose, onCreate }: Props) {
     try {
       const form = new FormData();
       form.append("title", title || "New Mission");
-      form.append("time_minutes", String(time));
 
       const storedUser = localStorage.getItem("focuskid_user");
       const parsedUser = storedUser ? JSON.parse(storedUser) : null;
       form.append("parent_id", parsedUser?.id ? String(parsedUser.id) : "1");
 
       form.append("quizzes", JSON.stringify(quizzes.filter(isQuizReady)));
-      files.forEach((file) => form.append("files", file));
+      form.append("file_durations", JSON.stringify(fileDrafts.map((draft) => Number(draft.time_minutes) || 15)));
+      fileDrafts.forEach((draft) => form.append("files", draft.file));
 
       const res = await fetch("http://localhost:4000/api/missions", { method: "POST", body: form });
       const json = (await res.json()) as Mission;
@@ -98,23 +119,30 @@ export default function AssignMission({ onClose, onCreate }: Props) {
           </label>
 
           <label>
-            Duration (minutes)
-            <input type="number" min={1} value={time} onChange={(e) => setTime(e.target.value)} />
-          </label>
-
-          <label>
             Attach reading files
             <input
               type="file"
               multiple
-              onChange={(e) => setFiles(e.target.files ? Array.from(e.target.files) : [])}
+              onChange={(e) => handleFileSelection(e.target.files)}
             />
           </label>
 
-          {files.length > 0 && (
-            <div className="selected-files">
-              {files.map((file) => (
-                <span key={`${file.name}-${file.size}`}>{file.name}</span>
+          {fileDrafts.length > 0 && (
+            <div className="file-draft-list">
+              {fileDrafts.map((draft, index) => (
+                <div className="file-draft-row" key={`${draft.file.name}-${draft.file.size}-${draft.file.lastModified}`}>
+                  <span>{draft.file.name}</span>
+                  <label>
+                    Minutes
+                    <input
+                      type="number"
+                      min={1}
+                      max={240}
+                      value={draft.time_minutes}
+                      onChange={(e) => updateFileDuration(index, e.target.value)}
+                    />
+                  </label>
+                </div>
               ))}
             </div>
           )}

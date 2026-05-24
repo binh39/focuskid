@@ -47,7 +47,7 @@ export default function NavBar() {
         <div className="fk-user">
           <div className="fk-user-text">
             <div className="name">Alex</div>
-            <div className="level">Level 12</div>
+            <div className="level">Rank Đồng</div>
           </div>
           <div className="fk-avatar">😊</div>
         </div>

@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Target, Settings, Sparkles, LogOut } from "lucide-react";
+import RankIcon from "./RankIcon";
 import type { User } from "../types";
+import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
 import "../assets/navbar.css";
 
 export default function ChildNavBar() {
@@ -13,8 +16,18 @@ export default function ChildNavBar() {
     { path: "/child/settings", icon: Settings, label: "My Settings" },
   ];
 
-  const stored = localStorage.getItem("focuskid_user");
-  const user = stored ? (JSON.parse(stored) as User) : null;
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const profile = getRewardProfile(user?.xp || 0);
+
+  useEffect(() => {
+    fetchCurrentUser()
+      .then((latestUser) => setUser(latestUser))
+      .catch((e) => console.error(e));
+
+    const syncUser = () => setUser(getStoredUser());
+    window.addEventListener("focuskid_user_updated", syncUser);
+    return () => window.removeEventListener("focuskid_user_updated", syncUser);
+  }, []);
 
   return (
     <nav className="fk-nav">
@@ -46,7 +59,11 @@ export default function ChildNavBar() {
         <div className="fk-user">
           <div className="fk-user-text">
             <div className="name">{user?.name || "Learner"}</div>
-            <div className="level">Role: Child</div>
+            <div className="rank-line" style={{ color: profile.rank.color }}>
+              <RankIcon rank={profile.rank} className="rank-line-icon" />
+              <span>{profile.rank.name}</span>
+              <span>- {profile.xp} XP</span>
+            </div>
           </div>
           <button
             type="button"

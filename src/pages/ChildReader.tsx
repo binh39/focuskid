@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, FileText, HelpCircle, Pause, Play } from "lucide-react";
+import RankIcon from "../components/RankIcon";
 import type { Mission, MissionFile, MissionQuiz, QuizOption } from "../types";
+import { getFileMinutes, getFileTimeLabel } from "../utils/missionProgress";
+import { applyRewardResult, awardXp, getRewardProfile, getStoredUser, type RewardRank, type RewardResult } from "../utils/rewards";
 import "../assets/reader.css";
 
 const quizOptions = (quiz: MissionQuiz) => [
@@ -28,13 +31,13 @@ export default function ChildReader() {
   const [completedFileIds, setCompletedFileIds] = useState<Set<number>>(
     () => new Set((mission?.files || []).filter((file) => file.completed).map((file) => file.id)),
   );
+  const timerRewardClaimedRef = useRef(Boolean(initialFile?.completed));
+  const [rewardNotice, setRewardNotice] = useState<{ xp: number; rank: RewardRank } | null>(null);
 
-  const totalMinutes = mission?.time_minutes
-    ? mission.time_minutes
-    : parseInt(String(mission?.time ?? "").replace(/[^0-9]/g, "")) || 10;
-
-  const totalSeconds = totalMinutes * 60;
-  const [timeLeft, setTimeLeft] = useState(totalSeconds);
+  const totalMinutes = selectedFile ? getFileMinutes(selectedFile, mission) : 0;
+  const [timeLeft, setTimeLeft] = useState(() =>
+    initialFile && !initialFile.completed ? getFileMinutes(initialFile, mission) * 60 : 0,
+  );
   const [isRunning, setIsRunning] = useState(false);
 
   const fileUrl = useMemo(() => {
@@ -42,10 +45,10 @@ export default function ChildReader() {
     return `http://localhost:4000${selectedFile.file_path}`;
   }, [selectedFile]);
 
-  const isFileCompleted = (file: MissionFile | null) => {
+  const isFileCompleted = useCallback((file: MissionFile | null) => {
     if (!file) return false;
     return Boolean(file.completed) || completedFileIds.has(file.id);
-  };
+  }, [completedFileIds]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -54,24 +57,43 @@ export default function ChildReader() {
   };
 
   const toggleTimer = () => {
+    if (!selectedFile || isFileCompleted(selectedFile)) return;
     setIsRunning((prev) => !prev);
   };
 
+  const showRewardNotice = useCallback((reward?: RewardResult | null) => {
+    if (!reward?.awarded || !reward.user) return;
+
+    const profile = getRewardProfile(reward.user.xp || 0);
+    setRewardNotice({ xp: reward.xp, rank: profile.rank });
+    window.setTimeout(() => setRewardNotice(null), 3200);
+  }, []);
+
   const selectFile = (file: MissionFile) => {
-    setSelectedFile({ ...file, completed: isFileCompleted(file) });
+    const nextFile = { ...file, completed: isFileCompleted(file) };
+    const isCompleted = isFileCompleted(nextFile);
+
+    setSelectedFile(nextFile);
     setSelectedQuiz(null);
+    setIsRunning(false);
+    setTimeLeft(isCompleted ? 0 : getFileMinutes(nextFile, mission) * 60);
+    timerRewardClaimedRef.current = isCompleted;
   };
 
   const selectQuiz = (quiz: MissionQuiz) => {
     setSelectedQuiz(quiz);
     setSelectedFile(null);
+    setIsRunning(false);
+    setTimeLeft(0);
+    timerRewardClaimedRef.current = true;
   };
 
-  const markSelectedFileComplete = async () => {
-    if (!mission || !selectedFile || isFileCompleted(selectedFile)) return;
+  const completeFile = useCallback(async (file: MissionFile, shouldAwardXp = false) => {
+    if (!mission || isFileCompleted(file)) return;
+    timerRewardClaimedRef.current = true;
 
     try {
-      const res = await fetch(`http://localhost:4000/api/missions/${mission.id}/files/${selectedFile.id}`, {
+      const res = await fetch(`http://localhost:4000/api/missions/${mission.id}/files/${file.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completed: true }),
@@ -80,29 +102,44 @@ export default function ChildReader() {
 
       setCompletedFileIds((prev) => {
         const next = new Set(prev);
-        next.add(selectedFile.id);
+        next.add(file.id);
         return next;
       });
-      setSelectedFile((current) => (current ? { ...current, completed: true } : current));
+      setSelectedFile((current) => (current?.id === file.id ? { ...current, completed: true } : current));
+      setIsRunning(false);
+      setTimeLeft(0);
+
+      if (shouldAwardXp) {
+        const reward = await awardXp(30, "Completed file timer", `timer:file:${file.id}`);
+        showRewardNotice(reward);
+      }
     } catch (e) {
       console.error(e);
     }
+  }, [isFileCompleted, mission, showRewardNotice]);
+
+  const markSelectedFileComplete = async () => {
+    if (!selectedFile) return;
+    await completeFile(selectedFile);
   };
 
   const submitQuizAnswer = async (quiz: MissionQuiz, answer: QuizOption) => {
     if (!mission || quiz.completed) return;
+    const user = getStoredUser();
 
     try {
       const res = await fetch(`http://localhost:4000/api/missions/${mission.id}/quizzes/${quiz.id}/answer`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answer }),
+        body: JSON.stringify({ answer, user_id: user?.id }),
       });
       if (!res.ok) return;
 
-      const json = (await res.json()) as { quiz: MissionQuiz };
+      const json = (await res.json()) as { quiz: MissionQuiz; reward?: RewardResult };
       setQuizzes((prev) => prev.map((item) => (item.id === quiz.id ? json.quiz : item)));
       setSelectedQuiz(json.quiz);
+      applyRewardResult(json.reward);
+      showRewardNotice(json.reward);
     } catch (e) {
       console.error(e);
     }
@@ -111,15 +148,36 @@ export default function ChildReader() {
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined;
     if (isRunning && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft((t) => (t > 0 ? t - 1 : 0)), 1000);
+      timer = setInterval(() => {
+        setTimeLeft((current) => {
+          if (current <= 1) {
+            setIsRunning(false);
+            return 0;
+          }
+
+          return current - 1;
+        });
+      }, 1000);
     }
     return () => {
       if (timer) clearInterval(timer);
     };
   }, [isRunning, timeLeft]);
 
+  useEffect(() => {
+    if (!selectedFile || timeLeft !== 0 || timerRewardClaimedRef.current || isFileCompleted(selectedFile)) return;
+    completeFile(selectedFile, true).catch((e) => console.error(e));
+  }, [completeFile, isFileCompleted, selectedFile, timeLeft]);
+
   return (
     <div className="reader-page child-dashboard">
+      {rewardNotice && (
+        <div className="reward-toast">
+          <RankIcon rank={rewardNotice.rank} className="reward-toast-icon" />
+          <span>+{rewardNotice.xp} XP</span>
+          <strong>{rewardNotice.rank.name}</strong>
+        </div>
+      )}
       <main className="reader-container full">
         <div className="reader-layout full">
           <section className="reader-doc full">
@@ -182,13 +240,14 @@ export default function ChildReader() {
           <aside className="reader-timer full">
             <div className="reader-side-content">
               <div className="timer-card">
-                <h3>Timer</h3>
-                <div className="timer-small">{formatTime(timeLeft)} remaining</div>
-                <button className="timer-btn" onClick={toggleTimer}>
-                  {isRunning ? <Pause className="icon" /> : <Play className="icon" />}
-                  {isRunning ? "Pause" : "Start"}
-                </button>
-                {selectedFile && (
+                <h3>{selectedFile ? "File Timer" : "Quiz"}</h3>
+                {selectedFile ? (
+                  <>
+                    <div className="timer-small">{formatTime(timeLeft)} remaining</div>
+                    <button className="timer-btn" onClick={toggleTimer} disabled={isFileCompleted(selectedFile)}>
+                      {isRunning ? <Pause className="icon" /> : <Play className="icon" />}
+                      {isRunning ? "Pause" : "Start"}
+                    </button>
                   <button
                     className="timer-btn complete"
                     onClick={markSelectedFileComplete}
@@ -197,8 +256,11 @@ export default function ChildReader() {
                     <Check className="icon" />
                     {isFileCompleted(selectedFile) ? "File Completed" : "Mark File Complete"}
                   </button>
+                    <div className="timer-meta">Goal: {totalMinutes} minutes for this file</div>
+                  </>
+                ) : (
+                  <div className="timer-empty">Answer the quiz correctly to complete it.</div>
                 )}
-                <div className="timer-meta">Goal: {totalMinutes} minutes</div>
                 {fileUrl && (
                   <div className="reader-link">
                     <a href={fileUrl} target="_blank" rel="noreferrer">Open in new tab</a>
@@ -214,7 +276,10 @@ export default function ChildReader() {
                       onClick={() => selectFile(file)}
                     >
                       {isFileCompleted(file) ? <Check className="icon-xs" /> : <FileText className="icon-xs" />}
-                      <span>{file.original_name}</span>
+                      <span>
+                        <strong>{file.original_name}</strong>
+                        <small>{getFileTimeLabel(file, mission)}</small>
+                      </span>
                     </button>
                   ))}
 

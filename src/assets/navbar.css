@@ -112,6 +112,22 @@
   font-size: 13px;
 }
 
+.fk-user-text .rank-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rank-line-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
 .fk-avatar {
   width: 48px;
   height: 48px;

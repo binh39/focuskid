@@ -5,6 +5,7 @@ export type User = {
   name: string;
   email: string;
   role: UserRole;
+  xp?: number;
 };
 
 export type Subtask = {
@@ -18,6 +19,7 @@ export type MissionFile = {
   mission_id: number;
   file_path: string;
   original_name: string;
+  time_minutes?: number | null;
   completed: boolean;
 };
 

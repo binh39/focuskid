@@ -2,22 +2,30 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
 import ChildNavBar from "../components/ChildNavBar";
-import type { Mission } from "../types";
-import { getMissionProgress, getMissionStartItem } from "../utils/missionProgress";
+import RankIcon from "../components/RankIcon";
+import type { Mission, User } from "../types";
+import { getMissionProgress, getMissionStartItem, getMissionTimeLabel } from "../utils/missionProgress";
+import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
 import "../assets/dashboard.css";
 
 export default function ChildDashboard() {
   const navigate = useNavigate();
   const [missions, setMissions] = useState<Mission[]>([]);
+  const [user, setUser] = useState<User | null>(() => getStoredUser());
 
   useEffect(() => {
     fetch("http://localhost:4000/api/missions")
       .then((r) => r.json())
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
+
+    fetchCurrentUser()
+      .then((latestUser) => setUser(latestUser))
+      .catch((e) => console.error(e));
   }, []);
 
   const recentMissions = missions.slice(0, 3);
+  const rewardProfile = getRewardProfile(user?.xp || 0);
 
   const startMission = (mission: Mission) => {
     const startItem = getMissionStartItem(mission);
@@ -48,10 +56,26 @@ export default function ChildDashboard() {
                 <p>Pick one task, focus for a short time, and earn your reward.</p>
               </div>
               <div className="hero-badges">
-                <span>Focus</span>
-                <span>Read</span>
-                <span>Short sessions</span>
+                <span className="rank-badge" style={{ color: rewardProfile.rank.color }}>
+                  <RankIcon rank={rewardProfile.rank} className="rank-badge-icon" />
+                  {rewardProfile.rank.name}
+                </span>
+                <span>{rewardProfile.xp} XP</span>
               </div>
+            </div>
+            <div className="card level-progress-card">
+              <div className="title-row">
+                <h2>Reward Progress</h2>
+                <span className="xp">{rewardProfile.xp} XP</span>
+              </div>
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${rewardProfile.rankProgress}%`, backgroundColor: rewardProfile.rank.color }} />
+              </div>
+              <p className="subtext">
+                {rewardProfile.nextRank
+                  ? `${rewardProfile.xpToNextRank} XP to ${rewardProfile.nextRank.name}`
+                  : "Top rank reached"}
+              </p>
             </div>
             <div className="missions-block">
               <div className="title-row">
@@ -76,7 +100,7 @@ export default function ChildDashboard() {
                           <div className="mission-top">
                             <h3>{mission.title}</h3>
                             <div className="mission-time-toggle">
-                              <span>{mission.time_minutes ? `${mission.time_minutes} min` : "-"}</span>
+                              <span>{getMissionTimeLabel(mission)}</span>
                             </div>
                           </div>
                           <div className="mission-progress-row">

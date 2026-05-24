@@ -1,14 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import confetti from "canvas-confetti";
-import { Star, Trophy, Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles, Trophy } from "lucide-react";
+import RankIcon from "../components/RankIcon";
+import type { User } from "../types";
+import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
 import "../assets/reward.css";
 
 export default function Reward() {
 	const navigate = useNavigate();
+	const [user, setUser] = useState<User | null>(() => getStoredUser());
+	const profile = getRewardProfile(user?.xp || 0);
 
 	useEffect(() => {
+		fetchCurrentUser()
+			.then((latestUser) => setUser(latestUser))
+			.catch((e) => console.error(e));
+
 		const duration = 3000;
 		const end = Date.now() + duration;
 
@@ -45,7 +54,9 @@ export default function Reward() {
 					transition={{ type: "spring", stiffness: 150, delay: 0.2 }}
 					className="reward-hero"
 				>
-					<div className="trophy-emoji">🏆</div>
+					<div className="trophy-emoji">
+						<Trophy className="reward-trophy-icon" />
+					</div>
 					<motion.h1
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
@@ -60,7 +71,7 @@ export default function Reward() {
 						transition={{ delay: 0.6 }}
 						className="reward-subtitle"
 					>
-						You completed your focus session!
+						Your XP and rank progress have been updated.
 					</motion.p>
 				</motion.div>
 
@@ -71,7 +82,22 @@ export default function Reward() {
 					className="reward-card"
 				>
 					<div className="reward-section">
-						<h2 className="reward-section-title">You Earned:</h2>
+						<h2 className="reward-section-title">Current Rewards</h2>
+						<div className="rank-showcase" style={{ borderColor: profile.rank.color }}>
+							<div className="rank-showcase-icon" style={{ backgroundColor: profile.rank.color }}>
+								<RankIcon rank={profile.rank} className="rank-showcase-svg" />
+							</div>
+							<div className="rank-name" style={{ color: profile.rank.color }}>{profile.rank.name}</div>
+							<div className="rank-progress-track">
+								<div
+									className="rank-progress-fill"
+									style={{ width: `${profile.rankProgress}%`, backgroundColor: profile.rank.color }}
+								/>
+							</div>
+							<div className="rank-next">
+								{profile.nextRank ? `${profile.xpToNextRank} XP to ${profile.nextRank.name}` : "Top rank reached"}
+							</div>
+						</div>
 						<div className="reward-grid">
 							<motion.div
 								initial={{ scale: 0 }}
@@ -79,11 +105,11 @@ export default function Reward() {
 								transition={{ delay: 1, type: "spring" }}
 								className="reward-item"
 							>
-								<div className="reward-icon orange">
-									<Star className="icon" />
+								<div className="reward-icon orange" style={{ backgroundColor: profile.rank.color }}>
+									<RankIcon rank={profile.rank} className="icon" />
 								</div>
-								<div className="reward-value">+25</div>
-								<div className="reward-label">Stars</div>
+								<div className="reward-value">{profile.rank.name}</div>
+								<div className="reward-label">Current Rank</div>
 							</motion.div>
 
 							<motion.div
@@ -95,8 +121,8 @@ export default function Reward() {
 								<div className="reward-icon blue">
 									<Sparkles className="icon" />
 								</div>
-								<div className="reward-value">+50</div>
-								<div className="reward-label">XP</div>
+								<div className="reward-value">{profile.xp}</div>
+								<div className="reward-label">Total XP</div>
 							</motion.div>
 
 							<motion.div
@@ -105,11 +131,11 @@ export default function Reward() {
 								transition={{ delay: 1.2, type: "spring" }}
 								className="reward-item"
 							>
-								<div className="reward-icon green">
-									<Trophy className="icon" />
+								<div className="reward-icon green" style={{ backgroundColor: profile.nextRank?.color || profile.rank.color }}>
+									{profile.nextRank ? <RankIcon rank={profile.nextRank} className="icon" /> : <Trophy className="icon" />}
 								</div>
-								<div className="reward-value">NEW</div>
-								<div className="reward-label">Badge</div>
+								<div className="reward-value">{profile.nextRank ? profile.nextRank.name : "Top"}</div>
+								<div className="reward-label">Next Rank</div>
 							</motion.div>
 						</div>
 					</div>
@@ -120,9 +146,13 @@ export default function Reward() {
 						transition={{ delay: 1.4 }}
 						className="badge-unlock"
 					>
-						<div className="badge-emoji">🎖️</div>
-						<div className="badge-name">Focus Champion Badge Unlocked!</div>
-						<div className="badge-desc">Complete 5 focus sessions</div>
+						<div className="badge-emoji" style={{ color: profile.rank.color }}>
+							<RankIcon rank={profile.rank} className="badge-rank-icon" />
+						</div>
+						<div className="badge-name">{profile.rank.name} Rank</div>
+						<div className="badge-desc">
+							{profile.nextRank ? `${profile.xpToNextRank} XP to ${profile.nextRank.name}` : "Top rank reached"}
+						</div>
 					</motion.div>
 
 					<div className="button-group">
@@ -145,10 +175,10 @@ export default function Reward() {
 							transition={{ delay: 1.7 }}
 							whileHover={{ scale: 1.02 }}
 							whileTap={{ scale: 0.98 }}
-							onClick={() => navigate("/child/dashboard")}
+							onClick={() => navigate("/child/progress")}
 							className="reward-btn secondary"
 						>
-							Back to Dashboard
+							View Progress
 						</motion.button>
 					</div>
 				</motion.div>

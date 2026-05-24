@@ -34,13 +34,13 @@ export default function Dashboard() {
 					<section className="dashboard-main">
 						<div className="card level-progress-card">
 							<div className="title-row">
-								<h2>Level Progress</h2>
+								<h2>Rank Progress</h2>
 								<span className="xp">1,240 / 1,500 XP</span>
 							</div>
 							<div className="progress-track">
 								<div className="progress-fill" />
 							</div>
-							<p className="subtext">260 XP to Level 13 🎯</p>
+							<p className="subtext">260 XP to next rank</p>
 						</div>
 
 						<div className="missions-block">

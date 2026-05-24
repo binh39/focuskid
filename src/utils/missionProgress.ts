@@ -23,6 +23,33 @@ export function getMissionProgress(mission: Mission) {
   };
 }
 
+export function getFileMinutes(file: MissionFile | null | undefined, mission?: Mission | null) {
+  const fileMinutes = Number(file?.time_minutes || 0);
+  if (fileMinutes > 0) return fileMinutes;
+
+  const missionMinutes = Number(mission?.time_minutes || 0);
+  if (missionMinutes > 0) return missionMinutes;
+
+  const parsedMissionTime = parseInt(String(mission?.time ?? "").replace(/[^0-9]/g, ""), 10);
+  return parsedMissionTime > 0 ? parsedMissionTime : 15;
+}
+
+export function getFileTimeLabel(file: MissionFile | null | undefined, mission?: Mission | null) {
+  return `${getFileMinutes(file, mission)} min`;
+}
+
+export function getMissionTimeLabel(mission: Mission) {
+  const files = mission.files || [];
+  if (files.length === 1) return getFileTimeLabel(files[0], mission);
+  if (files.length > 1) {
+    const totalMinutes = files.reduce((sum, file) => sum + getFileMinutes(file, mission), 0);
+    return `${files.length} files - ${totalMinutes} min total`;
+  }
+
+  if (mission.time_minutes) return `${mission.time_minutes} min`;
+  return mission.time || "No file time";
+}
+
 export function getNextMissionFile(mission: Mission): MissionFile | null {
   const files = mission.files || [];
   return files.find((file) => !file.completed) || null;

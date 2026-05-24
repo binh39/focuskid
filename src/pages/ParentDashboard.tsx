@@ -3,7 +3,7 @@ import { ChevronDown, Flame, Star, Trophy, Zap } from "lucide-react";
 import ParentNavBar from "../components/ParentNavBar";
 import AssignMission from "../components/AssignMission";
 import type { Mission } from "../types";
-import { getMissionProgress } from "../utils/missionProgress";
+import { getMissionProgress, getMissionTimeLabel } from "../utils/missionProgress";
 import "../assets/dashboard.css";
 
 export default function ParentDashboard() {
@@ -40,13 +40,13 @@ export default function ParentDashboard() {
             </div>
             <div className="card level-progress-card">
               <div className="title-row">
-                <h2>Level Progress</h2>
+                <h2>Rank Progress</h2>
                 <span className="xp">1,240 / 1,500 XP</span>
               </div>
               <div className="progress-track">
                 <div className="progress-fill" />
               </div>
-              <p className="subtext">260 XP to Level 13</p>
+              <p className="subtext">260 XP to next rank</p>
             </div>
 
             <div className="missions-block">
@@ -72,7 +72,7 @@ export default function ParentDashboard() {
                           <div className="mission-top">
                             <h3>{mission.title}</h3>
                             <div className="mission-time-toggle">
-                              <span>{mission.time || `${mission.time_minutes || 15} min`}</span>
+                              <span>{getMissionTimeLabel(mission)}</span>
                             </div>
                           </div>
                           <div className="mission-progress-row">
