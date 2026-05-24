@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, ChevronDown, ChevronUp, Clock, FileText, HelpCircle, Play } from "lucide-react";
 import ChildNavBar from "../components/ChildNavBar";
 import type { Mission, MissionFile } from "../types";
-import { getMissionProgress, getNextMissionFile, getNextMissionQuiz } from "../utils/missionProgress";
+import { getMissionProgress, getMissionStartItem } from "../utils/missionProgress";
 import "../assets/mission.css";
 
 type MissionWithExpanded = Mission & { expanded: boolean };
@@ -54,16 +54,15 @@ export default function ChildMissions() {
   };
 
   const startMission = (mission: Mission) => {
-    const nextFile = getNextMissionFile(mission);
-    const nextQuiz = getNextMissionQuiz(mission);
+    const startItem = getMissionStartItem(mission);
 
-    if (nextFile) {
-      navigate("/child/reader", { state: { mission, file: nextFile } });
+    if (startItem.type === "file") {
+      navigate("/child/reader", { state: { mission, file: startItem.file } });
       return;
     }
 
-    if (nextQuiz) {
-      navigate("/child/reader", { state: { mission } });
+    if (startItem.type === "quiz") {
+      navigate("/child/reader", { state: { mission, quiz: startItem.quiz } });
       return;
     }
 

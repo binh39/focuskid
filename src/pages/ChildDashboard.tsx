@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
 import ChildNavBar from "../components/ChildNavBar";
 import type { Mission } from "../types";
-import { getMissionProgress, getNextMissionFile, getNextMissionQuiz } from "../utils/missionProgress";
+import { getMissionProgress, getMissionStartItem } from "../utils/missionProgress";
 import "../assets/dashboard.css";
 
 export default function ChildDashboard() {
@@ -16,6 +16,24 @@ export default function ChildDashboard() {
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
   }, []);
+
+  const recentMissions = missions.slice(0, 3);
+
+  const startMission = (mission: Mission) => {
+    const startItem = getMissionStartItem(mission);
+
+    if (startItem.type === "file") {
+      navigate("/child/reader", { state: { mission, file: startItem.file } });
+      return;
+    }
+
+    if (startItem.type === "quiz") {
+      navigate("/child/reader", { state: { mission, quiz: startItem.quiz } });
+      return;
+    }
+
+    navigate("/child/focus", { state: { mission } });
+  };
 
   return (
     <div className="dashboard-page child-dashboard">
@@ -38,14 +56,17 @@ export default function ChildDashboard() {
             <div className="missions-block">
               <div className="title-row">
                 <h2 className="missions-heading">Your Missions</h2>
+                {missions.length > 3 && (
+                  <button type="button" className="link-btn" onClick={() => navigate("/child/missions")}>
+                    View all
+                  </button>
+                )}
               </div>
 
               <div className="mission-list">
                 {missions.length === 0 && <p className="subtext">No missions yet. Ask a parent to assign one.</p>}
-                {missions.map((mission) => {
+                {recentMissions.map((mission) => {
                   const progress = getMissionProgress(mission);
-                  const nextFile = getNextMissionFile(mission);
-                  const nextQuiz = getNextMissionQuiz(mission);
 
                   return (
                     <article className="card mission-card" key={mission.id}>
@@ -72,11 +93,7 @@ export default function ChildDashboard() {
                       <div style={{ marginTop: 12 }}>
                         <button
                           className="start-btn attention"
-                          onClick={() =>
-                            nextFile
-                              ? navigate("/child/reader", { state: { mission, file: nextFile } })
-                              : navigate(nextQuiz ? "/child/reader" : "/child/focus", { state: { mission } })
-                          }
+                          onClick={() => startMission(mission)}
                         >
                           <Play className="icon-xs" />
                           <span>Start</span>

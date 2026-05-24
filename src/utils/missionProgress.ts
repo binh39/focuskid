@@ -1,5 +1,10 @@
 import type { Mission, MissionFile, MissionQuiz } from "../types";
 
+export type MissionStartItem =
+  | { type: "file"; file: MissionFile }
+  | { type: "quiz"; quiz: MissionQuiz }
+  | { type: "focus" };
+
 export function getMissionProgress(mission: Mission) {
   const files = mission.files || [];
   const quizzes = mission.quizzes || [];
@@ -26,4 +31,20 @@ export function getNextMissionFile(mission: Mission): MissionFile | null {
 export function getNextMissionQuiz(mission: Mission): MissionQuiz | null {
   const quizzes = mission.quizzes || [];
   return quizzes.find((quiz) => !quiz.completed) || null;
+}
+
+export function getMissionStartItem(mission: Mission): MissionStartItem {
+  const nextFile = getNextMissionFile(mission);
+  if (nextFile) return { type: "file", file: nextFile };
+
+  const nextQuiz = getNextMissionQuiz(mission);
+  if (nextQuiz) return { type: "quiz", quiz: nextQuiz };
+
+  const firstFile = mission.files?.[0];
+  if (firstFile) return { type: "file", file: firstFile };
+
+  const firstQuiz = mission.quizzes?.[0];
+  if (firstQuiz) return { type: "quiz", quiz: firstQuiz };
+
+  return { type: "focus" };
 }
