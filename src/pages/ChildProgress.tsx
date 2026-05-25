@@ -5,7 +5,7 @@ export default function ChildProgress() {
   return (
     <div className="child-dashboard">
       <ChildNavBar />
-      <ProgressView />
+      <ProgressView audience="child" />
     </div>
   );
 }

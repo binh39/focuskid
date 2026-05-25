@@ -5,7 +5,7 @@ export default function ParentProgress() {
   return (
     <div className="parent-dashboard">
       <ParentNavBar />
-      <ProgressView />
+      <ProgressView audience="parent" />
     </div>
   );
 }

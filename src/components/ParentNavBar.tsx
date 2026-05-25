@@ -59,7 +59,7 @@ export default function ParentNavBar() {
           >
             <LogOut className="fk-icon" /> Logout
           </button>
-          <div className="fk-avatar">👩‍👧</div>
+          <div className="fk-avatar">P</div>
         </div>
       </div>
     </nav>

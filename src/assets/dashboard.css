@@ -5,7 +5,28 @@
 }
 
 .parent-dashboard {
-	background: #f6f4ef;
+	background: #f4f8f7;
+}
+
+.dashboard-page.parent-dashboard {
+	background:
+		linear-gradient(180deg, #eef7f5 0%, #f8fbfa 42%, #f4f8f7 100%);
+	color: #173f3a;
+}
+
+.dashboard-page.parent-dashboard .fk-nav {
+	background: rgba(255, 255, 255, 0.94);
+	border-bottom-color: #dce9e6;
+}
+
+.dashboard-page.parent-dashboard .fk-brand-icon,
+.dashboard-page.parent-dashboard .fk-nav-btn.active {
+	background: #2f6f68;
+}
+
+.dashboard-page.parent-dashboard .fk-avatar {
+	background: #8FB8A8;
+	box-shadow: 0 8px 14px rgba(47, 111, 104, 0.2);
 }
 
 .child-dashboard {
@@ -34,8 +55,50 @@
 }
 
 .parent-hero {
-	background: #ffffff;
-	box-shadow: 0 8px 24px rgba(4, 75, 55, 0.08);
+	background: linear-gradient(135deg, #ffffff 0%, #edf7f4 100%);
+	border: 1px solid #dce9e6;
+	box-shadow: 0 8px 24px rgba(47, 111, 104, 0.1);
+}
+
+.dashboard-page.parent-dashboard .parent-hero h1,
+.dashboard-page.parent-dashboard .missions-heading,
+.dashboard-page.parent-dashboard .mission-top h3,
+.dashboard-page.parent-dashboard .motivation-card h3 {
+	color: #173f3a;
+}
+
+.dashboard-page.parent-dashboard .parent-hero p,
+.dashboard-page.parent-dashboard .subtext,
+.dashboard-page.parent-dashboard .mission-time-toggle span,
+.dashboard-page.parent-dashboard .mission-progress-row strong,
+.dashboard-page.parent-dashboard .motivation-card p {
+	color: #5d7771;
+}
+
+.dashboard-page.parent-dashboard .hero-btn {
+	background: #2f6f68;
+	box-shadow: 0 12px 22px rgba(47, 111, 104, 0.22);
+}
+
+.dashboard-page.parent-dashboard .link-btn {
+	color: #4f8178;
+}
+
+.dashboard-page.parent-dashboard .link-btn:hover {
+	color: #173f3a;
+}
+
+.dashboard-page.parent-dashboard .card {
+	border-color: #dce9e6;
+	box-shadow: 0 8px 20px rgba(47, 111, 104, 0.08);
+}
+
+.dashboard-page.parent-dashboard .progress-track.slim {
+	background: rgba(47, 111, 104, 0.16);
+}
+
+.dashboard-page.parent-dashboard .mission-card:hover {
+	border-color: rgba(47, 111, 104, 0.35);
 }
 
 .child-hero {
@@ -494,6 +557,25 @@
 	align-items: center;
 	justify-content: center;
 	min-height: 140px;
+}
+
+.dashboard-page.parent-dashboard .motivation-card {
+	background: linear-gradient(135deg, #eef7f4, #dceee9);
+	border-color: #cfe2dd;
+	box-shadow: 0 8px 20px rgba(47, 111, 104, 0.12);
+}
+
+.dashboard-page.parent-dashboard .motivation-card .emoji {
+	width: 48px;
+	height: 48px;
+	border-radius: 999px;
+	display: grid;
+	place-items: center;
+	background: #ffffff;
+	border: 1px solid #cfe2dd;
+	color: #2f6f68;
+	font-size: 18px;
+	font-weight: 900;
 }
 
 .motivation-card .emoji {

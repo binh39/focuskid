@@ -18,12 +18,12 @@ export type RewardResult = {
 };
 
 export const RANKS: RewardRank[] = [
-  { name: "Đồng", minXp: 0, color: "#9a6a43", icon: "shield" },
-  { name: "Bạc", minXp: 250, color: "#7f8a96", icon: "medal" },
-  { name: "Vàng", minXp: 600, color: "#c9a86a", icon: "trophy" },
-  { name: "Bạch kim", minXp: 1000, color: "#6A8F8C", icon: "award" },
-  { name: "Kim cương", minXp: 1500, color: "#4a90e2", icon: "gem" },
-  { name: "Huyền thoại", minXp: 2200, color: "#8b5cf6", icon: "crown" },
+  { name: "Bronze", minXp: 0, color: "#9a6a43", icon: "shield" },
+  { name: "Silver", minXp: 250, color: "#7f8a96", icon: "medal" },
+  { name: "Gold", minXp: 600, color: "#c9a86a", icon: "trophy" },
+  { name: "Platinum", minXp: 1000, color: "#6A8F8C", icon: "award" },
+  { name: "Diamond", minXp: 1500, color: "#4a90e2", icon: "gem" },
+  { name: "Legendary", minXp: 2200, color: "#8b5cf6", icon: "crown" },
 ];
 
 export function getRewardProfile(xp = 0) {

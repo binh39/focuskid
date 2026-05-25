@@ -4,6 +4,7 @@ import ParentDashboard from "./pages/ParentDashboard";
 import ChildDashboard from "./pages/ChildDashboard";
 import ParentMissions from "./pages/ParentMissions";
 import ChildMissions from "./pages/ChildMissions";
+import ChildRanks from "./pages/ChildRanks";
 import ParentProgress from "./pages/ParentProgress";
 import ChildProgress from "./pages/ChildProgress";
 import ParentSettings from "./pages/ParentSettings";
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
   {
     path: "/child/missions",
     Component: ChildMissions,
+  },
+  {
+    path: "/child/ranks",
+    Component: ChildRanks,
   },
   {
     path: "/child/progress",

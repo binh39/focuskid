@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, Flame, Star, Trophy, Zap } from "lucide-react";
 import ParentNavBar from "../components/ParentNavBar";
 import AssignMission from "../components/AssignMission";
 import type { Mission } from "../types";
@@ -7,7 +6,6 @@ import { getMissionProgress, getMissionTimeLabel } from "../utils/missionProgres
 import "../assets/dashboard.css";
 
 export default function ParentDashboard() {
-  const [expandStats, setExpandStats] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [missions, setMissions] = useState<Mission[]>([]);
 
@@ -37,16 +35,6 @@ export default function ParentDashboard() {
               <button type="button" className="hero-btn" onClick={() => setShowAssign(true)}>
                 Assign a New Mission
               </button>
-            </div>
-            <div className="card level-progress-card">
-              <div className="title-row">
-                <h2>Rank Progress</h2>
-                <span className="xp">1,240 / 1,500 XP</span>
-              </div>
-              <div className="progress-track">
-                <div className="progress-fill" />
-              </div>
-              <p className="subtext">260 XP to next rank</p>
             </div>
 
             <div className="missions-block">
@@ -94,59 +82,6 @@ export default function ParentDashboard() {
           </section>
 
           <aside className="dashboard-side">
-            <div className="card stats-card">
-              <div className="stats-header">
-                <h3>Your Stats</h3>
-                <button type="button" className="stats-toggle" onClick={() => setExpandStats(!expandStats)}>
-                  <ChevronDown className={`icon-sm stats-chevron ${expandStats ? "rotated" : ""}`} />
-                </button>
-              </div>
-
-              <div className="stat-item">
-                <div className="stat-icon orange">
-                  <Flame className="stat-svg" />
-                </div>
-                <div>
-                  <div className="stat-value">7 Days</div>
-                  <div className="stat-label">Current Streak</div>
-                </div>
-              </div>
-
-              {expandStats && (
-                <>
-                  <div className="stat-item">
-                    <div className="stat-icon green">
-                      <Trophy className="stat-svg" />
-                    </div>
-                    <div>
-                      <div className="stat-value">12</div>
-                      <div className="stat-label">Badges Unlocked</div>
-                    </div>
-                  </div>
-
-                  <div className="stat-item">
-                    <div className="stat-icon blue">
-                      <Star className="stat-svg" />
-                    </div>
-                    <div>
-                      <div className="stat-value">342</div>
-                      <div className="stat-label">Stars Earned</div>
-                    </div>
-                  </div>
-
-                  <div className="stat-item">
-                    <div className="stat-icon sky">
-                      <Zap className="stat-svg" />
-                    </div>
-                    <div>
-                      <div className="stat-value">36</div>
-                      <div className="stat-label">Missions Done</div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
             <div className="motivation-card">
               <div className="emoji">OK</div>
               <h3>Keep Going!</h3>

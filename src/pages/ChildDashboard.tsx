@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Play } from "lucide-react";
+import { Check, ChevronDown, Play, Star, Target, Trophy } from "lucide-react";
 import ChildNavBar from "../components/ChildNavBar";
 import RankIcon from "../components/RankIcon";
 import type { Mission, User } from "../types";
@@ -12,6 +12,7 @@ export default function ChildDashboard() {
   const navigate = useNavigate();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [expandStats, setExpandStats] = useState(false);
 
   useEffect(() => {
     fetch("http://localhost:4000/api/missions")
@@ -26,6 +27,18 @@ export default function ChildDashboard() {
 
   const recentMissions = missions.slice(0, 3);
   const rewardProfile = getRewardProfile(user?.xp || 0);
+  const missionStats = missions.reduce(
+    (totals, mission) => {
+      const progress = getMissionProgress(mission);
+      return {
+        totalMissions: totals.totalMissions + 1,
+        completedMissions: totals.completedMissions + (progress.total > 0 && progress.completed >= progress.total ? 1 : 0),
+        completedItems: totals.completedItems + progress.completed,
+        totalItems: totals.totalItems + progress.total,
+      };
+    },
+    { totalMissions: 0, completedMissions: 0, completedItems: 0, totalItems: 0 },
+  );
 
   const startMission = (mission: Mission) => {
     const startItem = getMissionStartItem(mission);
@@ -131,6 +144,61 @@ export default function ChildDashboard() {
           </section>
 
           <aside className="dashboard-side">
+            <div className="card stats-card">
+              <div className="stats-header">
+                <h3>Your Stats</h3>
+                <button type="button" className="stats-toggle" onClick={() => setExpandStats(!expandStats)}>
+                  <ChevronDown className={`icon-sm stats-chevron ${expandStats ? "rotated" : ""}`} />
+                </button>
+              </div>
+
+              <div className="stat-item">
+                <div className="stat-icon blue">
+                  <Star className="stat-svg" />
+                </div>
+                <div>
+                  <div className="stat-value">{rewardProfile.xp}</div>
+                  <div className="stat-label">XP Earned</div>
+                </div>
+              </div>
+
+              {expandStats && (
+                <>
+                  <div className="stat-item">
+                    <div className="stat-icon green">
+                      <Target className="stat-svg" />
+                    </div>
+                    <div>
+                      <div className="stat-value">{missionStats.totalMissions}</div>
+                      <div className="stat-label">Missions Assigned</div>
+                    </div>
+                  </div>
+
+                  <div className="stat-item">
+                    <div className="stat-icon orange">
+                      <Check className="stat-svg" />
+                    </div>
+                    <div>
+                      <div className="stat-value">
+                        {missionStats.completedItems}/{missionStats.totalItems}
+                      </div>
+                      <div className="stat-label">Tasks Completed</div>
+                    </div>
+                  </div>
+
+                  <div className="stat-item">
+                    <div className="stat-icon sky">
+                      <Trophy className="stat-svg" />
+                    </div>
+                    <div>
+                      <div className="stat-value">{missionStats.completedMissions}</div>
+                      <div className="stat-label">Missions Done</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className="card motivation-card">
               <div className="emoji">OK</div>
               <h3>Ready to Learn</h3>

@@ -1,0 +1,261 @@
+.rank-page {
+	min-height: 100vh;
+	font-family: "Nunito", "Segoe UI", sans-serif;
+}
+
+.rank-container {
+	max-width: 1440px;
+	margin: 0 auto;
+	padding: 32px;
+}
+
+.rank-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 260px;
+	gap: 24px;
+	align-items: stretch;
+}
+
+.rank-eyebrow {
+	margin: 0 0 8px;
+	color: #6A8F8C;
+	font-size: 13px;
+	font-weight: 900;
+	letter-spacing: 0;
+	text-transform: uppercase;
+}
+
+.rank-header h1 {
+	margin: 0;
+	color: #1f2937;
+	font-size: 40px;
+	line-height: 1;
+}
+
+.rank-header p {
+	margin: 10px 0 0;
+	color: #64748b;
+	font-size: 16px;
+}
+
+.rank-current-panel {
+	background: #ffffff;
+	border: 2px solid #6A8F8C;
+	border-radius: 16px;
+	box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+	padding: 20px;
+	display: grid;
+	justify-items: center;
+	text-align: center;
+	gap: 8px;
+}
+
+.rank-current-icon {
+	width: 68px;
+	height: 68px;
+	border-radius: 999px;
+	display: grid;
+	place-items: center;
+	color: #ffffff;
+	box-shadow: 0 12px 24px rgba(31, 41, 55, 0.18);
+}
+
+.rank-current-svg {
+	width: 36px;
+	height: 36px;
+}
+
+.rank-current-panel span,
+.rank-current-panel small {
+	color: #64748b;
+	font-size: 13px;
+	font-weight: 800;
+}
+
+.rank-current-panel strong {
+	font-size: 28px;
+	line-height: 1;
+}
+
+.rank-next-panel {
+	margin-top: 24px;
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.08);
+	padding: 20px;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(240px, 420px);
+	gap: 20px;
+	align-items: center;
+}
+
+.rank-next-panel h2 {
+	margin: 0;
+	color: #1f2937;
+	font-size: 22px;
+}
+
+.rank-next-panel p {
+	margin: 6px 0 0;
+	color: #64748b;
+	font-weight: 700;
+}
+
+.rank-next-progress {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 48px;
+	gap: 12px;
+	align-items: center;
+	color: #1f2937;
+	font-weight: 900;
+}
+
+.rank-next-track,
+.rank-card-track {
+	width: 100%;
+	height: 10px;
+	background: #e5e7eb;
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.rank-next-fill,
+.rank-card-fill {
+	height: 100%;
+	border-radius: 999px;
+	transition: width 0.35s ease;
+}
+
+.rank-list {
+	margin-top: 24px;
+	display: grid;
+	gap: 14px;
+}
+
+.rank-card {
+	background: #ffffff;
+	border: 2px solid #eef2f7;
+	border-radius: 16px;
+	box-shadow: 0 8px 18px rgba(31, 41, 55, 0.06);
+	padding: 18px;
+	display: grid;
+	grid-template-columns: 72px minmax(0, 1fr);
+	gap: 16px;
+	align-items: center;
+}
+
+.rank-card.locked {
+	opacity: 0.72;
+}
+
+.rank-card.current {
+	box-shadow: 0 14px 28px rgba(31, 41, 55, 0.12);
+}
+
+.rank-card-icon {
+	width: 64px;
+	height: 64px;
+	border-radius: 16px;
+	display: grid;
+	place-items: center;
+	color: #ffffff;
+}
+
+.rank-card-svg {
+	width: 34px;
+	height: 34px;
+}
+
+.rank-card-body {
+	min-width: 0;
+	display: grid;
+	gap: 12px;
+}
+
+.rank-card-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 14px;
+}
+
+.rank-card h2 {
+	margin: 0;
+	color: #1f2937;
+	font-size: 24px;
+	line-height: 1.1;
+}
+
+.rank-card p {
+	margin: 6px 0 0;
+	color: #64748b;
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.rank-status {
+	border-radius: 999px;
+	padding: 7px 10px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	white-space: nowrap;
+	font-size: 13px;
+	font-weight: 900;
+}
+
+.rank-status.current {
+	background: #fff7ed;
+	color: #b45309;
+}
+
+.rank-status.unlocked {
+	background: #ecfdf5;
+	color: #047857;
+}
+
+.rank-status.locked {
+	background: #f1f5f9;
+	color: #64748b;
+}
+
+.rank-status-icon {
+	width: 14px;
+	height: 14px;
+	flex: 0 0 auto;
+}
+
+@media (max-width: 860px) {
+	.rank-header,
+	.rank-next-panel {
+		grid-template-columns: 1fr;
+	}
+
+	.rank-current-panel {
+		justify-items: start;
+		text-align: left;
+	}
+}
+
+@media (max-width: 640px) {
+	.rank-container {
+		padding: 16px;
+	}
+
+	.rank-header h1 {
+		font-size: 34px;
+	}
+
+	.rank-card {
+		grid-template-columns: 1fr;
+	}
+
+	.rank-card-head {
+		display: grid;
+	}
+
+	.rank-status {
+		justify-self: start;
+		white-space: normal;
+	}
+}

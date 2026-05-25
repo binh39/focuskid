@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Target, Settings, Sparkles, LogOut } from "lucide-react";
+import { Home, Target, Settings, Sparkles, LogOut, Trophy } from "lucide-react";
 import RankIcon from "./RankIcon";
 import type { User } from "../types";
 import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
@@ -13,6 +13,7 @@ export default function ChildNavBar() {
   const navItems = [
     { path: "/child/dashboard", icon: Home, label: "My Home" },
     { path: "/child/missions", icon: Target, label: "My Missions" },
+    { path: "/child/ranks", icon: Trophy, label: "My Ranks" },
     { path: "/child/settings", icon: Settings, label: "My Settings" },
   ];
 
@@ -75,7 +76,7 @@ export default function ChildNavBar() {
           >
             <LogOut className="fk-icon" /> Logout
           </button>
-          <div className="fk-avatar">🧒</div>
+          <div className="fk-avatar">FK</div>
         </div>
       </div>
     </nav>

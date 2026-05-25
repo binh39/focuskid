@@ -1,178 +1,178 @@
-import { useEffect, useState } from "react";
-import { Calendar, ChevronDown, Clock, Target, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Clock, Target, Trophy } from "lucide-react";
 import RankIcon from "./RankIcon";
-import type { User } from "../types";
+import type { Mission, User } from "../types";
+import { getMissionProgress } from "../utils/missionProgress";
 import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
 import "../assets/progress.css";
 
-const weeklyData = [
-  { day: "Mon", minutes: 45 },
-  { day: "Tue", minutes: 60 },
-  { day: "Wed", minutes: 30 },
-  { day: "Thu", minutes: 75 },
-  { day: "Fri", minutes: 50 },
-  { day: "Sat", minutes: 40 },
-  { day: "Sun", minutes: 55 },
-];
+type ProgressViewProps = {
+  audience: "parent" | "child";
+};
 
-const missionData = [
-  { name: "Math", completed: 12 },
-  { name: "Reading", completed: 8 },
-  { name: "Science", completed: 10 },
-  { name: "Writing", completed: 6 },
-];
-
-const monthlyData = [
-  { week: "Week 1", sessions: 5 },
-  { week: "Week 2", sessions: 8 },
-  { week: "Week 3", sessions: 6 },
-  { week: "Week 4", sessions: 10 },
-];
-
-function buildLinePoints(max: number): string {
-  const width = 640;
-  const height = 220;
-  const startX = 40;
-  const endX = width - 40;
-  const stepX = (endX - startX) / (weeklyData.length - 1);
-  const points = weeklyData
-    .map((item, index) => {
-      const x = startX + stepX * index;
-      const y = height - (item.minutes / max) * 170 - 20;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return points;
+function getTrackedMinutes(mission: Mission) {
+  const fileMinutes = (mission.files || []).reduce((sum, file) => sum + Number(file.time_minutes || 0), 0);
+  if (fileMinutes > 0) return fileMinutes;
+  return Number(mission.time_minutes || 0);
 }
 
-export default function ProgressView() {
-  const [showDetails, setShowDetails] = useState(false);
+export default function ProgressView({ audience }: ProgressViewProps) {
+  const [missions, setMissions] = useState<Mission[]>([]);
   const [user, setUser] = useState<User | null>(() => getStoredUser());
-  const maxWeekly = Math.max(...weeklyData.map((x) => x.minutes));
-  const linePoints = buildLinePoints(maxWeekly);
-  const weeklyAverage = Math.round(weeklyData.reduce((sum, item) => sum + item.minutes, 0) / weeklyData.length);
-  const bestDay = weeklyData.reduce((best, item) => (item.minutes > best.minutes ? item : best), weeklyData[0]);
-  const topSubject = missionData.reduce((best, item) => (item.completed > best.completed ? item : best), missionData[0]);
-  const rewardProfile = getRewardProfile(user?.xp || 0);
+  const showRank = audience === "child";
 
   useEffect(() => {
-    fetchCurrentUser()
-      .then((latestUser) => setUser(latestUser))
+    fetch("http://localhost:4000/api/missions")
+      .then((r) => r.json())
+      .then((data) => setMissions(data))
       .catch((e) => console.error(e));
-  }, []);
+
+    if (showRank) {
+      fetchCurrentUser()
+        .then((latestUser) => setUser(latestUser))
+        .catch((e) => console.error(e));
+    }
+  }, [showRank]);
+
+  const missionStats = useMemo(
+    () =>
+      missions.reduce(
+        (totals, mission) => {
+          const progress = getMissionProgress(mission);
+          return {
+            totalMissions: totals.totalMissions + 1,
+            completedMissions: totals.completedMissions + (progress.total > 0 && progress.completed >= progress.total ? 1 : 0),
+            completedItems: totals.completedItems + progress.completed,
+            totalItems: totals.totalItems + progress.total,
+            plannedMinutes: totals.plannedMinutes + getTrackedMinutes(mission),
+          };
+        },
+        { totalMissions: 0, completedMissions: 0, completedItems: 0, totalItems: 0, plannedMinutes: 0 },
+      ),
+    [missions],
+  );
+
+  const rewardProfile = getRewardProfile(user?.xp || 0);
+  const completionRate = missionStats.totalItems === 0
+    ? 0
+    : Math.round((missionStats.completedItems / missionStats.totalItems) * 100);
+  const remainingItems = Math.max(0, missionStats.totalItems - missionStats.completedItems);
+  const openMissions = Math.max(0, missionStats.totalMissions - missionStats.completedMissions);
 
   return (
     <div className="progress-page">
       <main className="progress-container">
         <header className="progress-header">
-          <h1>Your Progress</h1>
-          <p>Track your learning journey and achievements</p>
+          <h1>{showRank ? "Your Progress" : "Child Progress"}</h1>
+          <p>{showRank ? "Track your learning journey and achievements" : "Track assigned missions from saved data"}</p>
         </header>
 
         <section className="metric-grid">
           <article className="metric-card">
             <div className="metric-icon blue">
-              <Clock className="icon" />
+              <Target className="icon" />
             </div>
-            <h2>355</h2>
-            <p>Total Minutes</p>
+            <h2>{missionStats.totalMissions}</h2>
+            <p>Total Missions</p>
             <small>
-              <TrendingUp className="icon-xs" /> 12% this week
+              <Target className="icon-xs" /> {openMissions} open
             </small>
           </article>
 
           <article className="metric-card">
             <div className="metric-icon green">
-              <Target className="icon" />
+              <Check className="icon" />
             </div>
-            <h2>36</h2>
-            <p>Sessions Done</p>
+            <h2>{missionStats.completedItems}</h2>
+            <p>Tasks Completed</p>
             <small>
-              <Zap className="icon-xs" /> 4 new today
+              <Check className="icon-xs" /> {completionRate}% complete
             </small>
           </article>
 
-          <article className="metric-card">
-            <div className="metric-icon orange" style={{ backgroundColor: rewardProfile.rank.color }}>
-              <RankIcon rank={rewardProfile.rank} className="icon" />
-            </div>
-            <h2>{rewardProfile.rank.name}</h2>
-            <p>Current Rank</p>
-            <small>
-              <Calendar className="icon-xs" /> {rewardProfile.xp} XP
-            </small>
-          </article>
+          {showRank ? (
+            <article className="metric-card">
+              <div className="metric-icon orange" style={{ backgroundColor: rewardProfile.rank.color }}>
+                <RankIcon rank={rewardProfile.rank} className="icon" />
+              </div>
+              <h2>{rewardProfile.rank.name}</h2>
+              <p>Current Rank</p>
+              <small>
+                <Trophy className="icon-xs" /> {rewardProfile.xp} XP
+              </small>
+            </article>
+          ) : (
+            <article className="metric-card">
+              <div className="metric-icon orange">
+                <Clock className="icon" />
+              </div>
+              <h2>{missionStats.plannedMinutes}</h2>
+              <p>Planned Minutes</p>
+              <small>
+                <Clock className="icon-xs" /> From assigned files
+              </small>
+            </article>
+          )}
         </section>
+
+        {showRank && (
+          <section className="progress-chart">
+            <header className="section-header">
+              <h2>Rank Progress</h2>
+              <span>{rewardProfile.nextRank ? `${rewardProfile.xpToNextRank} XP to ${rewardProfile.nextRank.name}` : "Top rank reached"}</span>
+            </header>
+            <div className="progress-track">
+              <div className="bar-fill blue" style={{ width: `${rewardProfile.rankProgress}%`, backgroundColor: rewardProfile.rank.color }} />
+            </div>
+          </section>
+        )}
 
         <section className="progress-chart">
           <header className="section-header">
-            <h2>Rank Progress</h2>
-            <span>{rewardProfile.nextRank ? `${rewardProfile.xpToNextRank} XP to ${rewardProfile.nextRank.name}` : "Top rank reached"}</span>
+            <h2>Mission Completion</h2>
+            <span>
+              {missionStats.completedItems}/{missionStats.totalItems} tasks
+            </span>
           </header>
           <div className="progress-track">
-            <div className="bar-fill blue" style={{ width: `${rewardProfile.rankProgress}%`, backgroundColor: rewardProfile.rank.color }} />
+            <div className="bar-fill green" style={{ width: `${completionRate}%` }} />
           </div>
-        </section>
-
-        <section className="progress-chart">
-          <header className="section-header">
-            <h2>Weekly Focus Trend</h2>
-            <button type="button" onClick={() => setShowDetails(!showDetails)}>
-              Details <ChevronDown className={showDetails ? "icon-sm rotated" : "icon-sm"} />
-            </button>
-          </header>
-
-          <div className="chart-wrap">
-            <svg viewBox="0 0 640 220" className="chart-svg">
-              <polyline points={linePoints} className="trend-line" />
-            </svg>
-            <div className="chart-labels">
-              {weeklyData.map((item) => (
-                <div key={item.day}>{item.day}</div>
-              ))}
-            </div>
-          </div>
-
-          {showDetails && (
-            <div className="details-grid">
-              <div>
-                <h3>{weeklyAverage} min</h3>
-                <p>Weekly Average</p>
-              </div>
-              <div>
-                <h3>{bestDay.day}</h3>
-                <p>Best Day</p>
-              </div>
-              <div>
-                <h3>{topSubject.name}</h3>
-                <p>Top Subject</p>
-              </div>
-            </div>
-          )}
         </section>
 
         <section className="progress-grid">
           <div className="panel">
-            <h2>Mission Breakdown</h2>
+            <h2>Mission Status</h2>
             <div className="panel-list">
-              {missionData.map((item) => (
-                <div className="panel-row" key={item.name}>
-                  <span>{item.name}</span>
-                  <strong>{item.completed}</strong>
-                </div>
-              ))}
+              <div className="panel-row">
+                <span>Assigned</span>
+                <strong>{missionStats.totalMissions}</strong>
+              </div>
+              <div className="panel-row">
+                <span>Done</span>
+                <strong>{missionStats.completedMissions}</strong>
+              </div>
+              <div className="panel-row">
+                <span>Open</span>
+                <strong>{openMissions}</strong>
+              </div>
             </div>
           </div>
 
           <div className="panel">
-            <h2>Monthly Sessions</h2>
+            <h2>Learning Items</h2>
             <div className="panel-list">
-              {monthlyData.map((item) => (
-                <div className="panel-row" key={item.week}>
-                  <span>{item.week}</span>
-                  <strong>{item.sessions}</strong>
-                </div>
-              ))}
+              <div className="panel-row">
+                <span>Completed</span>
+                <strong>{missionStats.completedItems}</strong>
+              </div>
+              <div className="panel-row">
+                <span>Remaining</span>
+                <strong>{remainingItems}</strong>
+              </div>
+              <div className="panel-row">
+                <span>Planned Minutes</span>
+                <strong>{missionStats.plannedMinutes}</strong>
+              </div>
             </div>
           </div>
         </section>
