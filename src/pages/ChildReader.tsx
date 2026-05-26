@@ -42,6 +42,7 @@ export default function ChildReader() {
 
   const fileUrl = useMemo(() => {
     if (!selectedFile?.file_path) return null;
+    if (/^https?:\/\//i.test(selectedFile.file_path)) return selectedFile.file_path;
     return `http://localhost:4000${selectedFile.file_path}`;
   }, [selectedFile]);
 
@@ -303,3 +304,4 @@ export default function ChildReader() {
     </div>
   );
 }
+
