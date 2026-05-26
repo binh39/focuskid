@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+﻿import type { ComponentType } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Award, Target, Trophy, UserRound, Users } from "lucide-react";
@@ -16,11 +16,16 @@ const features: Feature[] = [
 	{ icon: Award, title: "Track Progress", desc: "See your learning journey" },
 ];
 
+type Mode = "signin" | "signup";
+
 export default function Login() {
 	const navigate = useNavigate();
+	const [mode, setMode] = useState<Mode>("signin");
 	const [role, setRole] = useState<"parent" | "child">("parent");
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
+	const [parentEmail, setParentEmail] = useState("");
+	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -28,46 +33,83 @@ export default function Login() {
 		navigate(r === "parent" ? "/parent/dashboard" : "/child/dashboard");
 	};
 
-	const handleLogin = async () => {
-		setLoading(true);
+	const resetFormState = () => {
 		setError("");
+		setName("");
+		setParentEmail("");
+		setPassword("");
+	};
+
+	const switchMode = (next: Mode) => {
+		if (next === mode) return;
+		setMode(next);
+		resetFormState();
+	};
+
+	const handleSignIn = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setError("");
+		if (!email.trim() || !password) {
+			setError("Please enter your email and password.");
+			return;
+		}
+		setLoading(true);
 		try {
 			const res = await fetch("http://localhost:4000/api/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email, role }),
+				body: JSON.stringify({ email: email.trim(), password }),
 			});
+			const data = await res.json().catch(() => null);
 			if (!res.ok) {
-				setError("Account not found. Please create an account.");
+				setError((data && data.error) || "Sign in failed. Please try again.");
 				return;
 			}
-			const user = await res.json();
-			localStorage.setItem("focuskid_user", JSON.stringify(user));
-			goToRoleDashboard(role);
+			localStorage.setItem("focuskid_user", JSON.stringify(data));
+			goToRoleDashboard(data.role);
 		} catch (err) {
 			console.error(err);
-			setError("Login failed. Please try again.");
+			setError("Sign in failed. Please try again.");
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleCreateAccount = async () => {
-		setLoading(true);
+	const handleSignUp = async (e: React.FormEvent) => {
+		e.preventDefault();
 		setError("");
+		if (!name.trim() || !email.trim() || !password) {
+			setError("Please fill in all the required fields.");
+			return;
+		}
+		if (password.length < 6) {
+			setError("Password must be at least 6 characters.");
+			return;
+		}
+		if (role === "child" && !parentEmail.trim()) {
+			setError("Please provide your parent's email.");
+			return;
+		}
+		setLoading(true);
 		try {
 			const res = await fetch("http://localhost:4000/api/users", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ name, email, role }),
+				body: JSON.stringify({
+					name: name.trim(),
+					email: email.trim(),
+					password,
+					role,
+					parent_email: role === "child" ? parentEmail.trim() : undefined,
+				}),
 			});
+			const data = await res.json().catch(() => null);
 			if (!res.ok) {
-				setError("Account creation failed.");
+				setError((data && data.error) || "Account creation failed.");
 				return;
 			}
-			const user = await res.json();
-			localStorage.setItem("focuskid_user", JSON.stringify(user));
-			goToRoleDashboard(role);
+			localStorage.setItem("focuskid_user", JSON.stringify(data));
+			goToRoleDashboard(data.role);
 		} catch (err) {
 			console.error(err);
 			setError("Account creation failed. Please try again.");
@@ -75,6 +117,8 @@ export default function Login() {
 			setLoading(false);
 		}
 	};
+
+	const isSignIn = mode === "signin";
 
 	return (
 		<div className="login-page">
@@ -110,54 +154,106 @@ export default function Login() {
 				<section className="login-card-wrap">
 					<div className="login-card">
 						<header className="card-header">
-							<h2>Welcome Back!</h2>
-							<p>Choose a role and sign in or create an account</p>
+							<h2>{isSignIn ? "Welcome Back!" : "Create your account"}</h2>
+							<p>
+								{isSignIn
+									? "Choose a role and sign in to continue."
+									: "Join FocusKid and start the adventure."}
+							</p>
 						</header>
 
 						<div className="role-switch">
-							<button type="button" className={role === "parent" ? "role-btn active" : "role-btn"} onClick={() => setRole("parent")}>
+							<button
+								type="button"
+								className={role === "parent" ? "role-btn active" : "role-btn"}
+								onClick={() => setRole("parent")}
+							>
 								<Users className="svg-icon" /> Parent
 							</button>
-							<button type="button" className={role === "child" ? "role-btn active" : "role-btn"} onClick={() => setRole("child")}>
+							<button
+								type="button"
+								className={role === "child" ? "role-btn active" : "role-btn"}
+								onClick={() => setRole("child")}
+							>
 								<UserRound className="svg-icon" /> Child
 							</button>
 						</div>
 
-						<div className="signin-form">
-							<label>
-								Name
-								<input value={name} onChange={(e) => setName(e.target.value)} placeholder={role === "parent" ? "Parent name" : "Child name"} />
-							</label>
+						<form
+							className="signin-form"
+							onSubmit={isSignIn ? handleSignIn : handleSignUp}
+							noValidate
+						>
+							{!isSignIn && (
+								<label>
+									Name
+									<input
+										value={name}
+										onChange={(e) => setName(e.target.value)}
+										placeholder={role === "parent" ? "Parent name" : "Child name"}
+										autoComplete="name"
+									/>
+								</label>
+							)}
+
 							<label>
 								Email
-								<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" />
+								<input
+									type="email"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									placeholder="email@example.com"
+									autoComplete="email"
+								/>
 							</label>
-						</div>
 
-						{error && <div className="error-text">{error}</div>}
+							{!isSignIn && role === "child" && (
+								<label>
+									Parent Email
+									<input
+										type="email"
+										value={parentEmail}
+										onChange={(e) => setParentEmail(e.target.value)}
+										placeholder="parent@example.com"
+										autoComplete="email"
+									/>
+								</label>
+							)}
 
-						<div className="signin-actions">
-							<button type="button" onClick={handleLogin} className="social-btn" disabled={loading}>
-								Sign in
+							<label>
+								Password
+								<input
+									type="password"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									placeholder={isSignIn ? "Your password" : "At least 6 characters"}
+									autoComplete={isSignIn ? "current-password" : "new-password"}
+								/>
+							</label>
+
+							{error && <div className="error-text">{error}</div>}
+
+							<button type="submit" className="primary-btn" disabled={loading}>
+								{loading
+									? isSignIn
+										? "Signing in..."
+										: "Creating..."
+									: isSignIn
+										? "Sign In"
+										: "Create Account"}
 							</button>
-						</div>
+						</form>
 
-						<div className="divider">
-							<span>or</span>
-						</div>
-
-						<button type="button" onClick={handleCreateAccount} className="primary-btn" disabled={loading}>
-							Create Account
-						</button>
-
-						<footer className="card-footer">
-							<button type="button" className="link-muted">
-								Need help?
+						<p className="card-switch">
+							{isSignIn ? "New here? " : "Already have an account? "}
+							<button
+								type="button"
+								className="link-primary"
+								onClick={() => switchMode(isSignIn ? "signup" : "signin")}
+							>
+								{isSignIn ? "Create Account" : "Sign In"}
 							</button>
-							<button type="button" onClick={handleLogin} className="link-primary">
-								Sign in
-							</button>
-						</footer>
+						</p>
 					</div>
 				</section>
 			</div>

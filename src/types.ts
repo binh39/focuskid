@@ -5,6 +5,7 @@ export type User = {
   name: string;
   email: string;
   role: UserRole;
+  parent_id?: number | null;
   xp?: number;
 };
 

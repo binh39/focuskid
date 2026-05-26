@@ -141,6 +141,45 @@ const supabaseTable = async (table, options = {}) => {
   });
 };
 
+const D = String.fromCharCode(36);
+
+const crypto = require('crypto');
+
+const PASSWORD_ITERATIONS = 120000;
+const PASSWORD_KEYLEN = 32;
+const PASSWORD_DIGEST = 'sha256';
+
+const hashPassword = (password) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto
+    .pbkdf2Sync(String(password), salt, PASSWORD_ITERATIONS, PASSWORD_KEYLEN, PASSWORD_DIGEST)
+    .toString('hex');
+  return ['pbkdf2', PASSWORD_ITERATIONS, salt, hash].join(D);
+};
+
+const verifyPassword = (password, stored) => {
+  if (!stored || typeof stored !== 'string') return false;
+  const parts = stored.split(D);
+  if (parts.length !== 4 || parts[0] !== 'pbkdf2') return false;
+  const iterations = parseInt(parts[1], 10) || PASSWORD_ITERATIONS;
+  const salt = parts[2];
+  const expected = parts[3];
+  const candidate = crypto
+    .pbkdf2Sync(String(password), salt, iterations, PASSWORD_KEYLEN, PASSWORD_DIGEST)
+    .toString('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(candidate, 'hex'));
+  } catch (_error) {
+    return false;
+  }
+};
+
+const sanitizeUser = (user) => {
+  if (!user) return user;
+  const { password_hash: _ignored, ...rest } = user;
+  return rest;
+};
+
 const getUserById = async (id) => {
   const rows = await supabaseTable('users', {
     filters: [{ column: 'id', value: id }],
@@ -155,6 +194,14 @@ const getUserByEmailAndRole = async (email, role) => {
       { column: 'email', value: email },
       { column: 'role', value: role },
     ],
+    limit: 1,
+  });
+  return normalizeUser(rows[0] || null);
+};
+
+const getUserByEmail = async (email) => {
+  const rows = await supabaseTable('users', {
+    filters: [{ column: 'email', value: email }],
     limit: 1,
   });
   return normalizeUser(rows[0] || null);
@@ -499,7 +546,7 @@ const ensureStorageBucket = async () => {
 app.get('/api/users', async (_req, res) => {
   try {
     const rows = await supabaseTable('users', { order: 'id.asc' });
-    res.json(rows.map(normalizeUser));
+    res.json(rows.map((row) => sanitizeUser(normalizeUser(row))));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -507,13 +554,52 @@ app.get('/api/users', async (_req, res) => {
 
 app.post('/api/users', async (req, res) => {
   try {
-    const { name, role, email } = req.body;
+    const name = String(req.body.name || '').trim();
+    const role = String(req.body.role || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    const parentEmailRaw = req.body.parent_email != null ? String(req.body.parent_email).trim().toLowerCase() : '';
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email and password are required' });
+    }
+    if (role !== 'parent' && role !== 'child') {
+      return res.status(400).json({ error: 'Role must be parent or child' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    const existing = await getUserByEmailAndRole(email, role);
+    if (existing) {
+      return res.status(409).json({ error: 'An account with this email already exists for this role' });
+    }
+
+    let parentId = null;
+    if (role === 'child') {
+      if (!parentEmailRaw) {
+        return res.status(400).json({ error: 'Parent email is required to create a child account' });
+      }
+      const parent = await getUserByEmailAndRole(parentEmailRaw, 'parent');
+      if (!parent) {
+        return res.status(400).json({ error: 'No parent account is registered with that email' });
+      }
+      parentId = parent.id;
+    }
+
     const rows = await supabaseTable('users', {
       method: 'POST',
-      body: { name, role, email, xp: 0 },
+      body: {
+        name,
+        role,
+        email,
+        password_hash: hashPassword(password),
+        parent_id: parentId,
+        xp: 0,
+      },
       returnRepresentation: true,
     });
-    const user = normalizeUser(rows[0] || null);
+    const user = sanitizeUser(normalizeUser(rows[0] || null));
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -524,7 +610,7 @@ app.get('/api/users/:id', async (req, res) => {
   try {
     const user = await getUserById(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
+    res.json(sanitizeUser(user));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -543,10 +629,19 @@ app.post('/api/users/:id/rewards', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   try {
-    const { email, role } = req.body;
-    const user = await getUserByEmailAndRole(email, role);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    const user = await getUserByEmail(email);
+    if (!user || !user.password_hash) {
+      return res.status(404).json({ error: 'Account not found. Create one to get started.' });
+    }
+    if (!verifyPassword(password, user.password_hash)) {
+      return res.status(401).json({ error: 'Incorrect email or password' });
+    }
+    res.json(sanitizeUser(user));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

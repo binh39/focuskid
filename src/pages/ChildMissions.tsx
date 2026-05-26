@@ -104,6 +104,7 @@ export default function ChildMissions() {
                 const progress = getMissionProgress(mission);
                 const files = mission.files || [];
                 const quizzes = mission.quizzes || [];
+                const quizDone = quizzes.length > 0 && quizzes.every((quiz) => Boolean(quiz.completed));
 
                 return (
                   <article className="mission-card" key={mission.id} style={{ animationDelay: `${index * 0.05}s` }}>
@@ -174,20 +175,26 @@ export default function ChildMissions() {
                           {quizzes.length > 0 && (
                             <div className="mission-section">
                               <div className="mission-section-title">Quiz</div>
-                              {quizzes.map((quiz) => (
-                                <div className="subtask-row file-row" key={quiz.id}>
-                                  <span className={quiz.completed ? "checkbox checked static" : "checkbox static"}>
-                                    {quiz.completed && <Check className="check-icon" />}
-                                  </span>
-                                  <HelpCircle className="icon-xs file-icon" />
-                                  <span className={quiz.completed ? "subtask-text done file-name" : "subtask-text file-name"}>
-                                    {quiz.question}
-                                  </span>
-                                  <button type="button" className="file-action-btn" onClick={() => navigate("/child/reader", { state: { mission, quiz } })}>
-                                    Start
-                                  </button>
-                                </div>
-                              ))}
+                              <div className="subtask-row file-row">
+                                <span className={quizDone ? "checkbox checked static" : "checkbox static"}>
+                                  {quizDone && <Check className="check-icon" />}
+                                </span>
+                                <HelpCircle className="icon-xs file-icon" />
+                                <span className={quizDone ? "subtask-text done file-name" : "subtask-text file-name"}>
+                                  Quizz - {quizzes.length} Questions
+                                </span>
+                                <button
+                                  type="button"
+                                  className="file-action-btn"
+                                  onClick={() =>
+                                    navigate("/child/reader", {
+                                      state: { mission, quiz: quizzes.find((q) => !q.completed) || quizzes[0] },
+                                    })
+                                  }
+                                >
+                                  Start
+                                </button>
+                              </div>
                             </div>
                           )}
 

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, FileText, HelpCircle, Pause, Play } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, FileText, HelpCircle, Pause, Play } from "lucide-react";
 import RankIcon from "../components/RankIcon";
+import FocusCameraPanel from "../components/FocusCameraPanel";
 import type { Mission, MissionFile, MissionQuiz, QuizOption } from "../types";
 import { getFileMinutes, getFileTimeLabel } from "../utils/missionProgress";
 import { applyRewardResult, awardXp, getRewardProfile, getStoredUser, type RewardRank, type RewardResult } from "../utils/rewards";
@@ -28,6 +29,12 @@ export default function ChildReader() {
 
   const [selectedFile, setSelectedFile] = useState<MissionFile | null>(initialFile);
   const [selectedQuiz, setSelectedQuiz] = useState<MissionQuiz | null>(initialQuiz);
+  const [quizIndex, setQuizIndex] = useState(() => {
+    const list = mission?.quizzes || [];
+    if (!initialQuiz) return 0;
+    const idx = list.findIndex((q) => q.id === initialQuiz.id);
+    return idx >= 0 ? idx : 0;
+  });
   const [completedFileIds, setCompletedFileIds] = useState<Set<number>>(
     () => new Set((mission?.files || []).filter((file) => file.completed).map((file) => file.id)),
   );
@@ -81,13 +88,26 @@ export default function ChildReader() {
     timerRewardClaimedRef.current = isCompleted;
   };
 
-  const selectQuiz = (quiz: MissionQuiz) => {
-    setSelectedQuiz(quiz);
+  const selectQuizAt = (index: number) => {
+    if (quizzes.length === 0) return;
+    const nextIndex = Math.max(0, Math.min(index, quizzes.length - 1));
+    setQuizIndex(nextIndex);
+    setSelectedQuiz(quizzes[nextIndex]);
     setSelectedFile(null);
     setIsRunning(false);
     setTimeLeft(0);
     timerRewardClaimedRef.current = true;
   };
+
+  const openQuizTab = () => {
+    if (quizzes.length === 0) return;
+    // Prefer the first incomplete quiz when entering the quiz tab.
+    const firstIncomplete = quizzes.findIndex((q) => !q.completed);
+    selectQuizAt(firstIncomplete >= 0 ? firstIncomplete : 0);
+  };
+
+  const goPrevQuiz = () => selectQuizAt(quizIndex - 1);
+  const goNextQuiz = () => selectQuizAt(quizIndex + 1);
 
   const completeFile = useCallback(async (file: MissionFile, shouldAwardXp = false) => {
     if (!mission || isFileCompleted(file)) return;
@@ -186,13 +206,31 @@ export default function ChildReader() {
               <button className="reader-back" onClick={() => navigate("/child/missions")}>
                 <ArrowLeft className="icon" /> Back
               </button>
-              <div className="reader-title">{selectedQuiz?.question || mission?.title || "Reading Task"}</div>
+              <div className="reader-title">
+                {selectedQuiz ? (
+                  <span className="reader-quiz-titletext">Quizz</span>
+                ) : (
+                  <>{mission?.title || "Reading Task"}</>
+                )}
+              </div>
               <div className="reader-spacer" />
             </div>
 
             {selectedQuiz ? (
               <div className="reader-main-quiz">
-                <div className={selectedQuiz.completed ? "main-quiz-card completed" : "main-quiz-card"}>
+                <div className="main-quiz-shell" aria-label="Quiz content">
+                  <button
+                    type="button"
+                    className="main-quiz-side-btn left"
+                    onClick={goPrevQuiz}
+                    disabled={quizIndex <= 0}
+                    aria-label="Previous question"
+                    title="Previous"
+                  >
+                    <ChevronLeft className="icon" />
+                  </button>
+
+                  <div className={selectedQuiz.completed ? "main-quiz-card completed" : "main-quiz-card"}>
                   <div className="main-quiz-heading">
                     {selectedQuiz.completed ? <Check className="icon" /> : <HelpCircle className="icon" />}
                     <h2>{selectedQuiz.question}</h2>
@@ -227,6 +265,18 @@ export default function ChildReader() {
                       {selectedQuiz.completed ? "Correct. Completed." : "Not correct. Try again."}
                     </div>
                   )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="main-quiz-side-btn right"
+                    onClick={goNextQuiz}
+                    disabled={quizIndex >= quizzes.length - 1}
+                    aria-label="Next question"
+                    title="Next"
+                  >
+                    <ChevronRight className="icon" />
+                  </button>
                 </div>
               </div>
             ) : fileUrl ? (
@@ -240,6 +290,7 @@ export default function ChildReader() {
 
           <aside className="reader-timer full">
             <div className="reader-side-content">
+              <FocusCameraPanel />
               <div className="timer-card">
                 <h3>{selectedFile ? "File Timer" : "Quiz"}</h3>
                 {selectedFile ? (
@@ -268,6 +319,20 @@ export default function ChildReader() {
                   </div>
                 )}
 
+                {quizzes.length > 0 && (
+                  <button
+                    type="button"
+                    className={selectedQuiz ? "reader-file-item active reader-quiz-tab" : "reader-file-item reader-quiz-tab"}
+                    onClick={openQuizTab}
+                  >
+                    <HelpCircle className="icon-xs" />
+                    <span>
+                      <strong>Quizz</strong>
+                      <small>{quizzes.length} Questions</small>
+                    </span>
+                  </button>
+                )}
+
                 <div className="reader-file-list">
                   {(mission?.files || []).map((file) => (
                     <button
@@ -281,18 +346,6 @@ export default function ChildReader() {
                         <strong>{file.original_name}</strong>
                         <small>{getFileTimeLabel(file, mission)}</small>
                       </span>
-                    </button>
-                  ))}
-
-                  {quizzes.map((quiz) => (
-                    <button
-                      type="button"
-                      key={`quiz-${quiz.id}`}
-                      className={selectedQuiz?.id === quiz.id ? "reader-file-item active" : "reader-file-item"}
-                      onClick={() => selectQuiz(quiz)}
-                    >
-                      {quiz.completed ? <Check className="icon-xs" /> : <HelpCircle className="icon-xs" />}
-                      <span>{quiz.question}</span>
                     </button>
                   ))}
                 </div>

@@ -102,15 +102,22 @@
 }
 
 .reader-back {
-  border: none;
+  border: 1px solid #e2e8f0;
   background: #ffffff;
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(31, 41, 55, 0.08);
+  color: #1f2937;
+  font-weight: 800;
+  min-height: 44px;
+}
+
+.reader-back:hover {
+  border-color: rgba(106, 143, 140, 0.65);
 }
 
 .reader-layout {
@@ -170,6 +177,33 @@
   overflow-y: auto;
 }
 
+.main-quiz-shell {
+  width: min(900px, 100%);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.main-quiz-side-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+}
+
+.main-quiz-side-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
 .main-quiz-card {
   width: min(760px, 100%);
   background: #ffffff;
@@ -184,6 +218,17 @@
 .main-quiz-card.completed {
   border-color: #8FB8A8;
   background: #f5fbf8;
+}
+
+
+.reader-quiz-titletext {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 44px;
+  font-weight: 900;
+  color: #1f2937;
 }
 
 .main-quiz-heading {
@@ -275,7 +320,12 @@
 
 .reader-link {
   margin-top: 10px;
-  text-align: right;
+  display: flex;
+  justify-content: center;
+}
+
+.reader-quiz-tab {
+  margin-top: 10px;
 }
 
 .reader-link a {
@@ -314,6 +364,157 @@
   display: grid;
   gap: 12px;
   text-align: center;
+}
+
+.focus-card {
+  gap: 14px;
+}
+
+.focus-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.focus-head h3 {
+  margin: 0;
+  color: #1f2937;
+}
+
+.focus-btn {
+  padding: 8px 12px;
+  border-radius: 12px;
+  min-width: 88px;
+}
+
+.focus-btn.stop {
+  background: #c9a86a;
+}
+
+.focus-preview {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+}
+
+.focus-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.focus-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  text-align: center;
+  color: #64748b;
+  font-weight: 700;
+  background: rgba(248, 250, 252, 0.86);
+}
+
+.focus-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+
+.focus-metric {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: #ffffff;
+  display: grid;
+  gap: 6px;
+  height: 88px;
+}
+
+.focus-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.focus-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  width: 100%;
+  height: 44px;
+  white-space: normal;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.focus-pill.focused {
+  background: #edf7f2;
+  color: #4d8174;
+  border-color: rgba(143, 184, 168, 0.65);
+}
+
+.focus-pill.distracted {
+  background: rgba(199, 123, 123, 0.14);
+  color: #9b4d4d;
+  border-color: rgba(199, 123, 123, 0.45);
+}
+
+.focus-score {
+  font-size: 22px;
+  font-weight: 900;
+  color: #044b37;
+  font-variant-numeric: tabular-nums;
+  height: 44px;
+  line-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3ch;
+}
+
+.focus-hint {
+  border-radius: 12px;
+  background: #eef6f2;
+  color: #315f55;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.focus-reminder {
+  border-radius: 12px;
+  background: rgba(201, 168, 106, 0.18);
+  color: #315f55;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.focus-privacy {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
 }
 
 .reader-topbar {
