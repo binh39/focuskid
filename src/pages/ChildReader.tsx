@@ -1,11 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, FileText, HelpCircle, Pause, Play } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  HelpCircle,
+  Pause,
+  Play,
+  AlertTriangle,
+} from "lucide-react";
 import RankIcon from "../components/RankIcon";
 import FocusCameraPanel from "../components/FocusCameraPanel";
 import type { Mission, MissionFile, MissionQuiz, QuizOption } from "../types";
 import { getFileMinutes, getFileTimeLabel } from "../utils/missionProgress";
-import { applyRewardResult, awardXp, getRewardProfile, getStoredUser, type RewardRank, type RewardResult } from "../utils/rewards";
+import {
+  applyRewardResult,
+  awardXp,
+  getRewardProfile,
+  getStoredUser,
+  type RewardRank,
+  type RewardResult,
+} from "../utils/rewards";
 import "../assets/reader.css";
 
 const quizOptions = (quiz: MissionQuiz) => [
@@ -15,20 +32,69 @@ const quizOptions = (quiz: MissionQuiz) => [
   { key: "D" as QuizOption, text: quiz.option_d },
 ];
 
+// Hàm tạo tiếng Beep không cần file audio ngoài
+const playBeep = () => {
+  try {
+    const AudioContextClass =
+      window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+
+    const playOscillator = (timeOffset: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine"; // Âm thanh mượt (pip)
+      osc.frequency.setValueAtTime(800, ctx.currentTime + timeOffset);
+      gain.gain.setValueAtTime(0.8, ctx.currentTime + timeOffset); // Âm lượng
+      osc.start(ctx.currentTime + timeOffset);
+      osc.stop(ctx.currentTime + timeOffset + 0.15);
+    };
+
+    playOscillator(0);
+    playOscillator(0.25); // Phát 2 nhịp "pip pip"
+  } catch (e) {
+    console.error("Audio play failed", e);
+  }
+};
+
 export default function ChildReader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const state = (location && (location.state as { mission?: Mission; file?: MissionFile; quiz?: MissionQuiz })) || {};
+  const state =
+    (location &&
+      (location.state as {
+        mission?: Mission;
+        file?: MissionFile;
+        quiz?: MissionQuiz;
+      })) ||
+    {};
   const mission = state.mission || null;
-  const [quizzes, setQuizzes] = useState<MissionQuiz[]>(() => mission?.quizzes || []);
+  const [quizzes, setQuizzes] = useState<MissionQuiz[]>(
+    () => mission?.quizzes || [],
+  );
 
   const initialFile = state.quiz
     ? null
-    : state.file || mission?.files?.find((file) => !file.completed) || mission?.files?.[0] || null;
-  const initialQuiz = state.quiz || (!initialFile ? mission?.quizzes?.find((quiz) => !quiz.completed) || mission?.quizzes?.[0] || null : null);
+    : state.file ||
+      mission?.files?.find((file) => !file.completed) ||
+      mission?.files?.[0] ||
+      null;
+  const initialQuiz =
+    state.quiz ||
+    (!initialFile
+      ? mission?.quizzes?.find((quiz) => !quiz.completed) ||
+        mission?.quizzes?.[0] ||
+        null
+      : null);
 
-  const [selectedFile, setSelectedFile] = useState<MissionFile | null>(initialFile);
-  const [selectedQuiz, setSelectedQuiz] = useState<MissionQuiz | null>(initialQuiz);
+  const [selectedFile, setSelectedFile] = useState<MissionFile | null>(
+    initialFile,
+  );
+  const [selectedQuiz, setSelectedQuiz] = useState<MissionQuiz | null>(
+    initialQuiz,
+  );
   const [quizIndex, setQuizIndex] = useState(() => {
     const list = mission?.quizzes || [];
     if (!initialQuiz) return 0;
@@ -36,27 +102,58 @@ export default function ChildReader() {
     return idx >= 0 ? idx : 0;
   });
   const [completedFileIds, setCompletedFileIds] = useState<Set<number>>(
-    () => new Set((mission?.files || []).filter((file) => file.completed).map((file) => file.id)),
+    () =>
+      new Set(
+        (mission?.files || [])
+          .filter((file) => file.completed)
+          .map((file) => file.id),
+      ),
   );
   const timerRewardClaimedRef = useRef(Boolean(initialFile?.completed));
-  const [rewardNotice, setRewardNotice] = useState<{ xp: number; rank: RewardRank } | null>(null);
+  const [rewardNotice, setRewardNotice] = useState<{
+    xp: number;
+    rank: RewardRank;
+  } | null>(null);
 
   const totalMinutes = selectedFile ? getFileMinutes(selectedFile, mission) : 0;
   const [timeLeft, setTimeLeft] = useState(() =>
-    initialFile && !initialFile.completed ? getFileMinutes(initialFile, mission) * 60 : 0,
+    initialFile && !initialFile.completed
+      ? getFileMinutes(initialFile, mission) * 60
+      : 0,
   );
   const [isRunning, setIsRunning] = useState(false);
 
+  // --- STATE QUẢN LÝ TẬP TRUNG ---
+  const [isDistractedState, setIsDistractedState] = useState(false);
+  const [showDistractionPopup, setShowDistractionPopup] = useState(false);
+
+  const handleDistractionChange = useCallback((isDistracted: boolean) => {
+    setIsDistractedState((prev) => {
+      // Chỉ kích hoạt popup và tiếng beep nếu từ trạng thái Tập trung -> Mất tập trung
+      if (!prev && isDistracted) {
+        setShowDistractionPopup(true);
+        setIsRunning(false); // Pause timer
+        playBeep();
+      }
+      return isDistracted;
+    });
+  }, []);
+  // ---------------------------------
+
   const fileUrl = useMemo(() => {
     if (!selectedFile?.file_path) return null;
-    if (/^https?:\/\//i.test(selectedFile.file_path)) return selectedFile.file_path;
+    if (/^https?:\/\//i.test(selectedFile.file_path))
+      return selectedFile.file_path;
     return `http://localhost:4000${selectedFile.file_path}`;
   }, [selectedFile]);
 
-  const isFileCompleted = useCallback((file: MissionFile | null) => {
-    if (!file) return false;
-    return Boolean(file.completed) || completedFileIds.has(file.id);
-  }, [completedFileIds]);
+  const isFileCompleted = useCallback(
+    (file: MissionFile | null) => {
+      if (!file) return false;
+      return Boolean(file.completed) || completedFileIds.has(file.id);
+    },
+    [completedFileIds],
+  );
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -101,7 +198,6 @@ export default function ChildReader() {
 
   const openQuizTab = () => {
     if (quizzes.length === 0) return;
-    // Prefer the first incomplete quiz when entering the quiz tab.
     const firstIncomplete = quizzes.findIndex((q) => !q.completed);
     selectQuizAt(firstIncomplete >= 0 ? firstIncomplete : 0);
   };
@@ -109,55 +205,70 @@ export default function ChildReader() {
   const goPrevQuiz = () => selectQuizAt(quizIndex - 1);
   const goNextQuiz = () => selectQuizAt(quizIndex + 1);
 
-  const completeFile = useCallback(async (file: MissionFile, shouldAwardXp = false) => {
-    if (!mission || isFileCompleted(file)) return;
-    timerRewardClaimedRef.current = true;
+  const completeFile = useCallback(
+    async (file: MissionFile, shouldAwardXp = false) => {
+      if (!mission || isFileCompleted(file)) return;
+      timerRewardClaimedRef.current = true;
 
-    try {
-      const res = await fetch(`http://localhost:4000/api/missions/${mission.id}/files/${file.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: true }),
-      });
-      if (!res.ok) return;
+      try {
+        const res = await fetch(
+          `http://localhost:4000/api/missions/${mission.id}/files/${file.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ completed: true }),
+          },
+        );
+        if (!res.ok) return;
 
-      setCompletedFileIds((prev) => {
-        const next = new Set(prev);
-        next.add(file.id);
-        return next;
-      });
-      setSelectedFile((current) => (current?.id === file.id ? { ...current, completed: true } : current));
-      setIsRunning(false);
-      setTimeLeft(0);
+        setCompletedFileIds((prev) => {
+          const next = new Set(prev);
+          next.add(file.id);
+          return next;
+        });
+        setSelectedFile((current) =>
+          current?.id === file.id ? { ...current, completed: true } : current,
+        );
+        setIsRunning(false);
+        setTimeLeft(0);
 
-      if (shouldAwardXp) {
-        const reward = await awardXp(30, "Completed file timer", `timer:file:${file.id}`);
-        showRewardNotice(reward);
+        if (shouldAwardXp) {
+          const reward = await awardXp(
+            30,
+            "Completed file timer",
+            `timer:file:${file.id}`,
+          );
+          showRewardNotice(reward);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [isFileCompleted, mission, showRewardNotice]);
-
-  const markSelectedFileComplete = async () => {
-    if (!selectedFile) return;
-    await completeFile(selectedFile);
-  };
+    },
+    [isFileCompleted, mission, showRewardNotice],
+  );
 
   const submitQuizAnswer = async (quiz: MissionQuiz, answer: QuizOption) => {
     if (!mission || quiz.completed) return;
     const user = getStoredUser();
 
     try {
-      const res = await fetch(`http://localhost:4000/api/missions/${mission.id}/quizzes/${quiz.id}/answer`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answer, user_id: user?.id }),
-      });
+      const res = await fetch(
+        `http://localhost:4000/api/missions/${mission.id}/quizzes/${quiz.id}/answer`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answer, user_id: user?.id }),
+        },
+      );
       if (!res.ok) return;
 
-      const json = (await res.json()) as { quiz: MissionQuiz; reward?: RewardResult };
-      setQuizzes((prev) => prev.map((item) => (item.id === quiz.id ? json.quiz : item)));
+      const json = (await res.json()) as {
+        quiz: MissionQuiz;
+        reward?: RewardResult;
+      };
+      setQuizzes((prev) =>
+        prev.map((item) => (item.id === quiz.id ? json.quiz : item)),
+      );
       setSelectedQuiz(json.quiz);
       applyRewardResult(json.reward);
       showRewardNotice(json.reward);
@@ -186,12 +297,81 @@ export default function ChildReader() {
   }, [isRunning, timeLeft]);
 
   useEffect(() => {
-    if (!selectedFile || timeLeft !== 0 || timerRewardClaimedRef.current || isFileCompleted(selectedFile)) return;
+    if (
+      !selectedFile ||
+      timeLeft !== 0 ||
+      timerRewardClaimedRef.current ||
+      isFileCompleted(selectedFile)
+    )
+      return;
     completeFile(selectedFile, true).catch((e) => console.error(e));
   }, [completeFile, isFileCompleted, selectedFile, timeLeft]);
 
   return (
     <div className="reader-page child-dashboard">
+      {/* --- POPUP MẤT TẬP TRUNG --- */}
+      {showDistractionPopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "32px",
+              borderRadius: "16px",
+              textAlign: "center",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: "16px",
+                color: "#ef4444",
+              }}
+            >
+              <AlertTriangle size={64} />
+            </div>
+            <h2
+              style={{
+                fontSize: "24px",
+                fontWeight: "bold",
+                color: "#111827",
+                marginBottom: "12px",
+              }}
+            >
+              Bạn đang mất tập trung!
+            </h2>
+
+            {/* Sử dụng chuẩn class timer-btn của hệ thống và thêm icon Play */}
+            <button
+              className="timer-btn"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={() => {
+                setShowDistractionPopup(false);
+                setIsRunning(true); // Resume thời gian
+              }}
+            >
+              <Play className="icon" />
+              Tiếp tục
+            </button>
+          </div>
+        </div>
+      )}
+      {/* --------------------------- */}
+
       {rewardNotice && (
         <div className="reward-toast">
           <RankIcon rank={rewardNotice.rank} className="reward-toast-icon" />
@@ -203,7 +383,10 @@ export default function ChildReader() {
         <div className="reader-layout full">
           <section className="reader-doc full">
             <div className="reader-topbar">
-              <button className="reader-back" onClick={() => navigate("/child/missions")}>
+              <button
+                className="reader-back"
+                onClick={() => navigate("/child/missions")}
+              >
                 <ArrowLeft className="icon" /> Back
               </button>
               <div className="reader-title">
@@ -230,41 +413,64 @@ export default function ChildReader() {
                     <ChevronLeft className="icon" />
                   </button>
 
-                  <div className={selectedQuiz.completed ? "main-quiz-card completed" : "main-quiz-card"}>
-                  <div className="main-quiz-heading">
-                    {selectedQuiz.completed ? <Check className="icon" /> : <HelpCircle className="icon" />}
-                    <h2>{selectedQuiz.question}</h2>
-                  </div>
-                  <div className="main-quiz-options">
-                    {quizOptions(selectedQuiz).map((option) => {
-                      const isSelected = selectedQuiz.selected_option === option.key;
-                      const isCorrect = selectedQuiz.completed && isSelected;
-                      const isWrong = !selectedQuiz.completed && isSelected;
-
-                      return (
-                        <button
-                          type="button"
-                          key={option.key}
-                          className={[
-                            "main-quiz-option",
-                            isSelected ? "selected" : "",
-                            isCorrect ? "correct" : "",
-                            isWrong ? "wrong" : "",
-                          ].filter(Boolean).join(" ")}
-                          onClick={() => submitQuizAnswer(selectedQuiz, option.key)}
-                          disabled={selectedQuiz.completed}
-                        >
-                          <span>{option.key}</span>
-                          {option.text}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedQuiz.selected_option && (
-                    <div className={selectedQuiz.completed ? "main-quiz-feedback correct" : "main-quiz-feedback wrong"}>
-                      {selectedQuiz.completed ? "Correct. Completed." : "Not correct. Try again."}
+                  <div
+                    className={
+                      selectedQuiz.completed
+                        ? "main-quiz-card completed"
+                        : "main-quiz-card"
+                    }
+                  >
+                    <div className="main-quiz-heading">
+                      {selectedQuiz.completed ? (
+                        <Check className="icon" />
+                      ) : (
+                        <HelpCircle className="icon" />
+                      )}
+                      <h2>{selectedQuiz.question}</h2>
                     </div>
-                  )}
+                    <div className="main-quiz-options">
+                      {quizOptions(selectedQuiz).map((option) => {
+                        const isSelected =
+                          selectedQuiz.selected_option === option.key;
+                        const isCorrect = selectedQuiz.completed && isSelected;
+                        const isWrong = !selectedQuiz.completed && isSelected;
+
+                        return (
+                          <button
+                            type="button"
+                            key={option.key}
+                            className={[
+                              "main-quiz-option",
+                              isSelected ? "selected" : "",
+                              isCorrect ? "correct" : "",
+                              isWrong ? "wrong" : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            onClick={() =>
+                              submitQuizAnswer(selectedQuiz, option.key)
+                            }
+                            disabled={selectedQuiz.completed}
+                          >
+                            <span>{option.key}</span>
+                            {option.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {selectedQuiz.selected_option && (
+                      <div
+                        className={
+                          selectedQuiz.completed
+                            ? "main-quiz-feedback correct"
+                            : "main-quiz-feedback wrong"
+                        }
+                      >
+                        {selectedQuiz.completed
+                          ? "Correct. Completed."
+                          : "Not correct. Try again."}
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -280,7 +486,11 @@ export default function ChildReader() {
                 </div>
               </div>
             ) : fileUrl ? (
-              <iframe className="reader-frame full" src={fileUrl} title="Learning material" />
+              <iframe
+                className="reader-frame full"
+                src={fileUrl}
+                title="Learning material"
+              />
             ) : (
               <div className="reader-empty">
                 No file or quiz found. Please ask your parent to add one.
@@ -290,39 +500,53 @@ export default function ChildReader() {
 
           <aside className="reader-timer full">
             <div className="reader-side-content">
-              <FocusCameraPanel />
+              {/* --- TRUYỀN CALLBACK onDistractionChange VÀO CAMERA PANEL --- */}
+              <FocusCameraPanel onDistractionChange={handleDistractionChange} />
+
               <div className="timer-card">
                 <h3>{selectedFile ? "File Timer" : "Quiz"}</h3>
                 {selectedFile ? (
                   <>
-                    <div className="timer-small">{formatTime(timeLeft)} remaining</div>
-                    <button className="timer-btn" onClick={toggleTimer} disabled={isFileCompleted(selectedFile)}>
-                      {isRunning ? <Pause className="icon" /> : <Play className="icon" />}
+                    <div className="timer-small">
+                      {formatTime(timeLeft)} remaining
+                    </div>
+                    <button
+                      className="timer-btn"
+                      onClick={toggleTimer}
+                      disabled={isFileCompleted(selectedFile)}
+                    >
+                      {isRunning ? (
+                        <Pause className="icon" />
+                      ) : (
+                        <Play className="icon" />
+                      )}
                       {isRunning ? "Pause" : "Start"}
                     </button>
-                  <button
-                    className="timer-btn complete"
-                    onClick={markSelectedFileComplete}
-                    disabled={isFileCompleted(selectedFile)}
-                  >
-                    <Check className="icon" />
-                    {isFileCompleted(selectedFile) ? "File Completed" : "Mark File Complete"}
-                  </button>
-                    <div className="timer-meta">Goal: {totalMinutes} minutes for this file</div>
+                    <div className="timer-meta">
+                      Goal: {totalMinutes} minutes for this file
+                    </div>
                   </>
                 ) : (
-                  <div className="timer-empty">Answer the quiz correctly to complete it.</div>
+                  <div className="timer-empty">
+                    Answer the quiz correctly to complete it.
+                  </div>
                 )}
                 {fileUrl && (
                   <div className="reader-link">
-                    <a href={fileUrl} target="_blank" rel="noreferrer">Open in new tab</a>
+                    <a href={fileUrl} target="_blank" rel="noreferrer">
+                      Open in new tab
+                    </a>
                   </div>
                 )}
 
                 {quizzes.length > 0 && (
                   <button
                     type="button"
-                    className={selectedQuiz ? "reader-file-item active reader-quiz-tab" : "reader-file-item reader-quiz-tab"}
+                    className={
+                      selectedQuiz
+                        ? "reader-file-item active reader-quiz-tab"
+                        : "reader-file-item reader-quiz-tab"
+                    }
                     onClick={openQuizTab}
                   >
                     <HelpCircle className="icon-xs" />
@@ -338,10 +562,18 @@ export default function ChildReader() {
                     <button
                       type="button"
                       key={`file-${file.id}`}
-                      className={selectedFile?.id === file.id ? "reader-file-item active" : "reader-file-item"}
+                      className={
+                        selectedFile?.id === file.id
+                          ? "reader-file-item active"
+                          : "reader-file-item"
+                      }
                       onClick={() => selectFile(file)}
                     >
-                      {isFileCompleted(file) ? <Check className="icon-xs" /> : <FileText className="icon-xs" />}
+                      {isFileCompleted(file) ? (
+                        <Check className="icon-xs" />
+                      ) : (
+                        <FileText className="icon-xs" />
+                      )}
                       <span>
                         <strong>{file.original_name}</strong>
                         <small>{getFileTimeLabel(file, mission)}</small>
@@ -357,4 +589,3 @@ export default function ChildReader() {
     </div>
   );
 }
-
