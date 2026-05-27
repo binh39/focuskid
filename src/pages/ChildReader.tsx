@@ -32,7 +32,7 @@ const quizOptions = (quiz: MissionQuiz) => [
   { key: "D" as QuizOption, text: quiz.option_d },
 ];
 
-// Hàm tạo tiếng Beep không cần file audio ngoài
+// Hàm tạo tiếng Beep báo động với âm lượng lớn (0.8)
 const playBeep = () => {
   try {
     const AudioContextClass =
@@ -45,15 +45,15 @@ const playBeep = () => {
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.type = "sine"; // Âm thanh mượt (pip)
+      osc.type = "sine";
       osc.frequency.setValueAtTime(800, ctx.currentTime + timeOffset);
-      gain.gain.setValueAtTime(0.8, ctx.currentTime + timeOffset); // Âm lượng
+      gain.gain.setValueAtTime(0.8, ctx.currentTime + timeOffset);
       osc.start(ctx.currentTime + timeOffset);
       osc.stop(ctx.currentTime + timeOffset + 0.15);
     };
 
     playOscillator(0);
-    playOscillator(0.25); // Phát 2 nhịp "pip pip"
+    playOscillator(0.25);
   } catch (e) {
     console.error("Audio play failed", e);
   }
@@ -116,6 +116,8 @@ export default function ChildReader() {
   } | null>(null);
 
   const totalMinutes = selectedFile ? getFileMinutes(selectedFile, mission) : 0;
+  const totalSeconds = totalMinutes * 60;
+
   const [timeLeft, setTimeLeft] = useState(() =>
     initialFile && !initialFile.completed
       ? getFileMinutes(initialFile, mission) * 60
@@ -127,12 +129,15 @@ export default function ChildReader() {
   const [isDistractedState, setIsDistractedState] = useState(false);
   const [showDistractionPopup, setShowDistractionPopup] = useState(false);
 
+  // Logic tính phần trăm chạy ngược (Giảm dần từ 100% về 0%)
+  const progressPercent =
+    totalSeconds > 0 ? (timeLeft / totalSeconds) * 100 : 0;
+
   const handleDistractionChange = useCallback((isDistracted: boolean) => {
     setIsDistractedState((prev) => {
-      // Chỉ kích hoạt popup và tiếng beep nếu từ trạng thái Tập trung -> Mất tập trung
       if (!prev && isDistracted) {
         setShowDistractionPopup(true);
-        setIsRunning(false); // Pause timer
+        setIsRunning(false);
         playBeep();
       }
       return isDistracted;
@@ -354,14 +359,23 @@ export default function ChildReader() {
             >
               Bạn đang mất tập trung!
             </h2>
+            <p
+              style={{
+                color: "#4b5563",
+                fontSize: "16px",
+                marginBottom: "24px",
+              }}
+            >
+              Thời gian đã được tạm dừng. Hãy nhìn lại vào màn hình để tiếp tục
+              bài học nhé.
+            </p>
 
-            {/* Sử dụng chuẩn class timer-btn của hệ thống và thêm icon Play */}
             <button
               className="timer-btn"
               style={{ width: "100%", justifyContent: "center" }}
               onClick={() => {
                 setShowDistractionPopup(false);
-                setIsRunning(true); // Resume thời gian
+                setIsRunning(true);
               }}
             >
               <Play className="icon" />
@@ -500,16 +514,34 @@ export default function ChildReader() {
 
           <aside className="reader-timer full">
             <div className="reader-side-content">
-              {/* --- TRUYỀN CALLBACK onDistractionChange VÀO CAMERA PANEL --- */}
               <FocusCameraPanel onDistractionChange={handleDistractionChange} />
 
               <div className="timer-card">
                 <h3>{selectedFile ? "File Timer" : "Quiz"}</h3>
                 {selectedFile ? (
                   <>
-                    <div className="timer-small">
-                      {formatTime(timeLeft)} remaining
+                    {/* Thanh chạy ngược màu xanh lục (#22c55e) */}
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "12px",
+                        backgroundColor: "#e5e7eb",
+                        borderRadius: "999px",
+                        overflow: "hidden",
+                        marginBottom: "16px",
+                      }}
+                      title={`${formatTime(timeLeft)} remaining`}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${progressPercent}%`,
+                          backgroundColor: "#6A8F8C",
+                          transition: "width 1s linear",
+                        }}
+                      />
                     </div>
+
                     <button
                       className="timer-btn"
                       onClick={toggleTimer}

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useFocusDetection } from "../hooks/useFocusDetection";
 
 type FocusCameraPanelProps = {
@@ -13,36 +13,32 @@ export default function FocusCameraPanel({
     permission,
     error,
     isRunning,
-    status,
-    score,
     reminder,
     videoRef,
     start,
     stop,
   } = useFocusDetection();
 
+  // TỰ ĐỘNG BẬT CAMERA KHI VÀO TRANG
+  const hasStarted = useRef(false);
+  useEffect(() => {
+    if (isSupported && !hasStarted.current) {
+      hasStarted.current = true;
+      start();
+    }
+  }, [start, isSupported]);
+
+  // Báo trạng thái mất tập trung ra component cha
   useEffect(() => {
     if (onDistractionChange) {
       onDistractionChange(!!reminder);
     }
   }, [reminder, onDistractionChange]);
 
-  const statusClass = status === "Focused" ? "focused" : "distracted";
-
   return (
     <div className="timer-card focus-card" aria-label="Focus monitoring camera">
       <div className="focus-head">
         <h3>Focus Camera</h3>
-        <button
-          type="button"
-          className={
-            isRunning ? "timer-btn focus-btn stop" : "timer-btn focus-btn"
-          }
-          onClick={isRunning ? stop : start}
-          disabled={!isSupported}
-        >
-          {isRunning ? "Stop" : "Start"}
-        </button>
       </div>
 
       {!isSupported ? (
@@ -58,28 +54,15 @@ export default function FocusCameraPanel({
             <video ref={videoRef} className="focus-video" playsInline muted />
             {!isRunning && (
               <div className="focus-overlay">
-                Press Start to enable the camera.
+                Đang khởi động camera theo dõi...
               </div>
             )}
-          </div>
-
-          <div className="focus-metrics">
-            <div className="focus-metric">
-              <span className="focus-label">Status</span>
-              <span className={`focus-pill ${statusClass}`} title={status}>
-                {status}
-              </span>
-            </div>
-            <div className="focus-metric">
-              <span className="focus-label">Focus score</span>
-              <span className="focus-score">{score}</span>
-            </div>
           </div>
 
           {permission === "denied" && (
             <div className="focus-hint">
               Camera permission is off. Please allow access in your browser
-              settings, then press Start.
+              settings to enable focus monitoring.
             </div>
           )}
 
