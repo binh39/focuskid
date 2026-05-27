@@ -2,15 +2,21 @@ import { useEffect, useState } from "react";
 import ParentNavBar from "../components/ParentNavBar";
 import AssignMission from "../components/AssignMission";
 import type { Mission } from "../types";
-import { getMissionProgress, getMissionTimeLabel } from "../utils/missionProgress";
+import {
+  getMissionProgress,
+  getMissionTimeLabel,
+} from "../utils/missionProgress";
 import "../assets/dashboard.css";
 
 export default function ParentDashboard() {
   const [showAssign, setShowAssign] = useState(false);
   const [missions, setMissions] = useState<Mission[]>([]);
+  const storedUser = localStorage.getItem("focuskid_user");
+  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  const user_id = parsedUser.id;
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/missions")
+    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
       .then((r) => r.json())
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
@@ -30,9 +36,16 @@ export default function ParentDashboard() {
             <div className="hero-banner parent-hero">
               <div>
                 <h1>Parent Control Center</h1>
-                <p>Create missions, attach learning files, and guide your child with short steps.</p>
+                <p>
+                  Create missions, attach learning files, and guide your child
+                  with short steps.
+                </p>
               </div>
-              <button type="button" className="hero-btn" onClick={() => setShowAssign(true)}>
+              <button
+                type="button"
+                className="hero-btn"
+                onClick={() => setShowAssign(true)}
+              >
                 Assign a New Mission
               </button>
             </div>
@@ -41,21 +54,29 @@ export default function ParentDashboard() {
               <div className="title-row">
                 <h2 className="missions-heading">Assign Missions</h2>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <button type="button" onClick={() => setShowAssign(true)} className="link-btn">
+                  <button
+                    type="button"
+                    onClick={() => setShowAssign(true)}
+                    className="link-btn"
+                  >
                     Assign Mission
                   </button>
                 </div>
               </div>
 
               <div className="mission-list">
-                {missions.length === 0 && <p className="subtext">No missions assigned yet.</p>}
+                {missions.length === 0 && (
+                  <p className="subtext">No missions assigned yet.</p>
+                )}
                 {missions.map((mission) => {
                   const progress = getMissionProgress(mission);
 
                   return (
                     <article className="card mission-card" key={mission.id}>
                       <div className="mission-header-row">
-                        <div className="mission-icon">{mission.icon || "M"}</div>
+                        <div className="mission-icon">
+                          {mission.icon || "M"}
+                        </div>
                         <div className="mission-content">
                           <div className="mission-top">
                             <h3>{mission.title}</h3>
@@ -67,7 +88,10 @@ export default function ParentDashboard() {
                             <div className="progress-track slim">
                               <div
                                 className="progress-fill colored"
-                                style={{ width: `${progress.percentage}%`, backgroundColor: mission.color || "#8FB8A8" }}
+                                style={{
+                                  width: `${progress.percentage}%`,
+                                  backgroundColor: mission.color || "#8FB8A8",
+                                }}
                               />
                             </div>
                             <strong>{progress.percentage}%</strong>
@@ -91,7 +115,12 @@ export default function ParentDashboard() {
         </div>
       </main>
 
-      {showAssign && <AssignMission onClose={() => setShowAssign(false)} onCreate={handleCreateMission} />}
+      {showAssign && (
+        <AssignMission
+          onClose={() => setShowAssign(false)}
+          onCreate={handleCreateMission}
+        />
+      )}
     </div>
   );
 }

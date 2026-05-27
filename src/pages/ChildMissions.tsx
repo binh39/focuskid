@@ -11,9 +11,12 @@ type MissionWithExpanded = Mission & { expanded: boolean };
 export default function ChildMissions() {
   const navigate = useNavigate();
   const [missions, setMissions] = useState<MissionWithExpanded[]>([]);
+  const storedUser = localStorage.getItem("focuskid_user");
+  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  const user_id = parsedUser.id;
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/missions")
+    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
       .then((r) => r.json())
       .then((data: Mission[]) => setMissions(data.map((m) => ({ ...m, expanded: false }))))
       .catch((e) => console.error(e));

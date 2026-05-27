@@ -4,8 +4,16 @@ import { Check, ChevronDown, Play, Star, Target, Trophy } from "lucide-react";
 import ChildNavBar from "../components/ChildNavBar";
 import RankIcon from "../components/RankIcon";
 import type { Mission, User } from "../types";
-import { getMissionProgress, getMissionStartItem, getMissionTimeLabel } from "../utils/missionProgress";
-import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
+import {
+  getMissionProgress,
+  getMissionStartItem,
+  getMissionTimeLabel,
+} from "../utils/missionProgress";
+import {
+  fetchCurrentUser,
+  getRewardProfile,
+  getStoredUser,
+} from "../utils/rewards";
 import "../assets/dashboard.css";
 
 export default function ChildDashboard() {
@@ -13,9 +21,12 @@ export default function ChildDashboard() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [user, setUser] = useState<User | null>(() => getStoredUser());
   const [expandStats, setExpandStats] = useState(false);
+  const storedUser = localStorage.getItem("focuskid_user");
+  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  const user_id = parsedUser.id;
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/missions")
+    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
       .then((r) => r.json())
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
@@ -32,12 +43,19 @@ export default function ChildDashboard() {
       const progress = getMissionProgress(mission);
       return {
         totalMissions: totals.totalMissions + 1,
-        completedMissions: totals.completedMissions + (progress.total > 0 && progress.completed >= progress.total ? 1 : 0),
+        completedMissions:
+          totals.completedMissions +
+          (progress.total > 0 && progress.completed >= progress.total ? 1 : 0),
         completedItems: totals.completedItems + progress.completed,
         totalItems: totals.totalItems + progress.total,
       };
     },
-    { totalMissions: 0, completedMissions: 0, completedItems: 0, totalItems: 0 },
+    {
+      totalMissions: 0,
+      completedMissions: 0,
+      completedItems: 0,
+      totalItems: 0,
+    },
   );
 
   const startMission = (mission: Mission) => {
@@ -66,11 +84,19 @@ export default function ChildDashboard() {
             <div className="hero-banner child-hero">
               <div>
                 <h1>Hi, ready for a mission?</h1>
-                <p>Pick one task, focus for a short time, and earn your reward.</p>
+                <p>
+                  Pick one task, focus for a short time, and earn your reward.
+                </p>
               </div>
               <div className="hero-badges">
-                <span className="rank-badge" style={{ color: rewardProfile.rank.color }}>
-                  <RankIcon rank={rewardProfile.rank} className="rank-badge-icon" />
+                <span
+                  className="rank-badge"
+                  style={{ color: rewardProfile.rank.color }}
+                >
+                  <RankIcon
+                    rank={rewardProfile.rank}
+                    className="rank-badge-icon"
+                  />
                   {rewardProfile.rank.name}
                 </span>
                 <span>{rewardProfile.xp} XP</span>
@@ -82,7 +108,13 @@ export default function ChildDashboard() {
                 <span className="xp">{rewardProfile.xp} XP</span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill" style={{ width: `${rewardProfile.rankProgress}%`, backgroundColor: rewardProfile.rank.color }} />
+                <div
+                  className="progress-fill"
+                  style={{
+                    width: `${rewardProfile.rankProgress}%`,
+                    backgroundColor: rewardProfile.rank.color,
+                  }}
+                />
               </div>
               <p className="subtext">
                 {rewardProfile.nextRank
@@ -94,21 +126,31 @@ export default function ChildDashboard() {
               <div className="title-row">
                 <h2 className="missions-heading">Your Missions</h2>
                 {missions.length > 3 && (
-                  <button type="button" className="link-btn" onClick={() => navigate("/child/missions")}>
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => navigate("/child/missions")}
+                  >
                     View all
                   </button>
                 )}
               </div>
 
               <div className="mission-list">
-                {missions.length === 0 && <p className="subtext">No missions yet. Ask a parent to assign one.</p>}
+                {missions.length === 0 && (
+                  <p className="subtext">
+                    No missions yet. Ask a parent to assign one.
+                  </p>
+                )}
                 {recentMissions.map((mission) => {
                   const progress = getMissionProgress(mission);
 
                   return (
                     <article className="card mission-card" key={mission.id}>
                       <div className="mission-header-row">
-                        <div className="mission-icon">{mission.icon || "M"}</div>
+                        <div className="mission-icon">
+                          {mission.icon || "M"}
+                        </div>
                         <div className="mission-content">
                           <div className="mission-top">
                             <h3>{mission.title}</h3>
@@ -120,7 +162,10 @@ export default function ChildDashboard() {
                             <div className="progress-track slim">
                               <div
                                 className="progress-fill colored"
-                                style={{ width: `${progress.percentage}%`, backgroundColor: mission.color || "#8FB8A8" }}
+                                style={{
+                                  width: `${progress.percentage}%`,
+                                  backgroundColor: mission.color || "#8FB8A8",
+                                }}
                               />
                             </div>
                             <strong>{progress.percentage}%</strong>
@@ -147,8 +192,14 @@ export default function ChildDashboard() {
             <div className="card stats-card">
               <div className="stats-header">
                 <h3>Your Stats</h3>
-                <button type="button" className="stats-toggle" onClick={() => setExpandStats(!expandStats)}>
-                  <ChevronDown className={`icon-sm stats-chevron ${expandStats ? "rotated" : ""}`} />
+                <button
+                  type="button"
+                  className="stats-toggle"
+                  onClick={() => setExpandStats(!expandStats)}
+                >
+                  <ChevronDown
+                    className={`icon-sm stats-chevron ${expandStats ? "rotated" : ""}`}
+                  />
                 </button>
               </div>
 
@@ -169,7 +220,9 @@ export default function ChildDashboard() {
                       <Target className="stat-svg" />
                     </div>
                     <div>
-                      <div className="stat-value">{missionStats.totalMissions}</div>
+                      <div className="stat-value">
+                        {missionStats.totalMissions}
+                      </div>
                       <div className="stat-label">Missions Assigned</div>
                     </div>
                   </div>
@@ -191,7 +244,9 @@ export default function ChildDashboard() {
                       <Trophy className="stat-svg" />
                     </div>
                     <div>
-                      <div className="stat-value">{missionStats.completedMissions}</div>
+                      <div className="stat-value">
+                        {missionStats.completedMissions}
+                      </div>
                       <div className="stat-label">Missions Done</div>
                     </div>
                   </div>
