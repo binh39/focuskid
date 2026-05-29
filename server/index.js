@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
@@ -278,6 +278,64 @@ const getMissionById = async (id) => {
   };
 };
 
+const normalizeFocusSession = (row) => {
+  if (!row) return row;
+  return {
+    id: row.id == null ? null : Number(row.id),
+    user_id: row.user_id == null ? null : Number(row.user_id),
+    mission_id: row.mission_id == null ? null : Number(row.mission_id),
+    file_id: row.file_id == null ? null : Number(row.file_id),
+    planned_minutes: row.planned_minutes == null ? null : Number(row.planned_minutes),
+    started_at: row.started_at || null,
+    ended_at: row.ended_at || null,
+    completed: Boolean(row.completed),
+    distraction_count:
+      row.distraction_count == null ? null : Number(row.distraction_count),
+  };
+};
+
+const normalizeDistractionEvent = (row) => {
+  if (!row) return row;
+  return {
+    id: row.id == null ? null : Number(row.id),
+    session_id: row.session_id == null ? null : Number(row.session_id),
+    user_id: row.user_id == null ? null : Number(row.user_id),
+    mission_id: row.mission_id == null ? null : Number(row.mission_id),
+    file_id: row.file_id == null ? null : Number(row.file_id),
+    reason: row.reason || "attention_drift",
+    created_at: row.created_at || null,
+  };
+};
+
+const clampInt = (value, min, max, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(parsed, min), max);
+};
+
+const toDateKey = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return date.toISOString().slice(0, 10);
+};
+
+const buildDailyPauseBreakdown = (events) => {
+  const counts = new Map();
+  for (const event of events || []) {
+    const key = toDateKey(event.created_at);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => {
+      if (a.date === b.date) return 0;
+      if (a.date === "unknown") return 1;
+      if (b.date === "unknown") return -1;
+      return a.date < b.date ? 1 : -1;
+    })
+    .slice(0, 7);
+};
 const uploadMissionFileToStorage = async (missionId, file) => {
   const objectPath = buildMissionFileObjectPath(
     missionId,
@@ -727,6 +785,168 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+app.post("/api/focus-sessions", async (req, res) => {
+  try {
+    const userId = req.body.user_id;
+    if (!userId) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
+
+    const plannedMinutes = clampInt(req.body.planned_minutes, 1, 240, 15);
+    const missionId = req.body.mission_id == null || req.body.mission_id === "" ? null : Number(req.body.mission_id);
+    const fileId = req.body.file_id == null || req.body.file_id === "" ? null : Number(req.body.file_id);
+
+    const rows = await supabaseTable("focus_sessions", {
+      method: "POST",
+      body: {
+        user_id: Number(userId),
+        mission_id: Number.isFinite(missionId) ? missionId : null,
+        file_id: Number.isFinite(fileId) ? fileId : null,
+        planned_minutes: plannedMinutes,
+      },
+      returnRepresentation: true,
+    });
+
+    res.json(normalizeFocusSession(rows[0] || null));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch("/api/focus-sessions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: "Session id is required" });
+    }
+
+    const body = {};
+    if (Object.prototype.hasOwnProperty.call(req.body, "completed")) {
+      body.completed = Boolean(req.body.completed);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "ended_at")) {
+      body.ended_at = req.body.ended_at == null ? null : String(req.body.ended_at);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "distraction_count")) {
+      body.distraction_count = clampInt(req.body.distraction_count, 0, 10000, 0);
+    }
+
+    if (!Object.keys(body).length) {
+      return res.status(400).json({ error: "No focus session fields provided" });
+    }
+
+    const rows = await supabaseTable("focus_sessions", {
+      method: "PATCH",
+      filters: [{ column: "id", value: id }],
+      body,
+      returnRepresentation: true,
+    });
+
+    if (!rows || !rows.length) {
+      return res.status(404).json({ error: "Focus session not found" });
+    }
+
+    res.json(normalizeFocusSession(rows[0] || null));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/distraction-events", async (req, res) => {
+  try {
+    const userId = req.body.user_id;
+    if (!userId) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
+
+    const reason = String(req.body.reason || "attention_drift").slice(0, 120) || "attention_drift";
+    const sessionId = req.body.session_id == null || req.body.session_id === "" ? null : Number(req.body.session_id);
+    const missionId = req.body.mission_id == null || req.body.mission_id === "" ? null : Number(req.body.mission_id);
+    const fileId = req.body.file_id == null || req.body.file_id === "" ? null : Number(req.body.file_id);
+
+    const rows = await supabaseTable("distraction_events", {
+      method: "POST",
+      body: {
+        session_id: Number.isFinite(sessionId) ? sessionId : null,
+        user_id: Number(userId),
+        mission_id: Number.isFinite(missionId) ? missionId : null,
+        file_id: Number.isFinite(fileId) ? fileId : null,
+        reason,
+      },
+      returnRepresentation: true,
+    });
+
+    res.json(normalizeDistractionEvent(rows[0] || null));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/focus-insights", async (req, res) => {
+  try {
+    const userId = req.query.user_id || req.body.user_id;
+    if (!userId) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
+
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    let childIds = [user.id];
+    if (user.role === "parent") {
+      const children = await supabaseTable("users", {
+        filters: [
+          { column: "parent_id", value: user.id },
+          { column: "role", value: "child" },
+        ],
+        order: "id.asc",
+      });
+      childIds = (children || []).map((row) => row.id).filter((value) => value != null);
+    }
+
+    if (!childIds.length) {
+      return res.json({
+        total_sessions: 0,
+        completed_sessions: 0,
+        planned_minutes: 0,
+        distraction_events: 0,
+        recent_sessions: [],
+        daily_pauses: [],
+        recent_events: [],
+      });
+    }
+
+    const [sessionRows, eventRows] = await Promise.all([
+      supabaseTable("focus_sessions", {
+        filters: [{ column: "user_id", operator: "in", value: `(${childIds.join(",")})` }],
+        order: "created_at.desc",
+        limit: 20,
+      }),
+      supabaseTable("distraction_events", {
+        filters: [{ column: "user_id", operator: "in", value: `(${childIds.join(",")})` }],
+        order: "created_at.desc",
+        limit: 200,
+      }),
+    ]);
+
+    const sessions = (sessionRows || []).map(normalizeFocusSession);
+    const events = (eventRows || []).map(normalizeDistractionEvent);
+
+    res.json({
+      total_sessions: sessions.length,
+      completed_sessions: sessions.filter((session) => session.completed).length,
+      planned_minutes: sessions.reduce((sum, session) => sum + (session.planned_minutes || 0), 0),
+      distraction_events: events.length,
+      recent_sessions: sessions.slice(0, 5),
+      daily_pauses: buildDailyPauseBreakdown(events),
+      recent_events: events.slice(0, 5),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.post("/api/missions", upload.array("files"), async (req, res) => {
   try {
     const { title, time_minutes, parent_id, quizzes, file_durations } =
@@ -769,14 +989,14 @@ app.post("/api/missions", upload.array("files"), async (req, res) => {
 
 app.get("/api/missions", async (req, res) => {
   try {
-    // Ưu tiên lấy từ query (best practice cho GET), hoặc fallback sang body nếu bạn vẫn muốn giữ body
+    // Æ¯u tiÃªn láº¥y tá»« query (best practice cho GET), hoáº·c fallback sang body náº¿u báº¡n váº«n muá»‘n giá»¯ body
     const userId = req.query.user_id || req.body.user_id;
 
     if (!userId) {
       return res.status(400).json({ error: "Missing user_id parameter" });
     }
 
-    // 1. Fetch thông tin user từ bảng users
+    // 1. Fetch thÃ´ng tin user tá»« báº£ng users
     const users = await supabaseTable("users", {
       filters: [{ column: "id", operator: "eq", value: userId }],
       limit: 1,
@@ -789,7 +1009,7 @@ app.get("/api/missions", async (req, res) => {
     const user = users[0];
     let targetParentId;
 
-    // 2. Kiểm tra role để xác định parent_id cần dùng để lọc missions
+    // 2. Kiá»ƒm tra role Ä‘á»ƒ xÃ¡c Ä‘á»‹nh parent_id cáº§n dÃ¹ng Ä‘á»ƒ lá»c missions
     if (user.role === "parent") {
       targetParentId = user.id;
     } else if (user.role === "child") {
@@ -803,13 +1023,13 @@ app.get("/api/missions", async (req, res) => {
       return res.status(403).json({ error: "Invalid user role" });
     }
 
-    // 3. Truyền filter parent_id vào hàm getMissionRows
+    // 3. Truyá»n filter parent_id vÃ o hÃ m getMissionRows
     const filters = [
       { column: "parent_id", operator: "eq", value: targetParentId },
     ];
     const missions = await getMissionRows(filters);
 
-    // 4. Lấy các relations (giữ nguyên logic cũ của bạn)
+    // 4. Láº¥y cÃ¡c relations (giá»¯ nguyÃªn logic cÅ© cá»§a báº¡n)
     const withRelations = await Promise.all(
       missions.map((mission) => getMissionById(mission.id)),
     );
@@ -963,3 +1183,4 @@ startServer().catch((error) => {
   console.error(error.message);
   process.exit(1);
 });
+
