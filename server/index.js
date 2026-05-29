@@ -313,9 +313,39 @@ const clampInt = (value, min, max, fallback) => {
   return Math.min(Math.max(parsed, min), max);
 };
 
+const parsePositiveId = (value) => {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+};
+
+const parseOptionalId = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  return parsePositiveId(value);
+};
+
+const parseBoolean = (value) => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+  return Boolean(value);
+};
+
+const buildIdInFilter = (ids) => `(${ids.map((id) => Number(id)).join(",")})`;
+
+const getFocusSessionById = async (id) => {
+  const rows = await supabaseTable("focus_sessions", {
+    filters: [{ column: "id", value: id }],
+    limit: 1,
+  });
+  return normalizeFocusSession(rows[0] || null);
+};
+
 const toDateKey = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "unknown";
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return "Unknown day";
   return date.toISOString().slice(0, 10);
 };
 
@@ -328,14 +358,10 @@ const buildDailyPauseBreakdown = (events) => {
 
   return Array.from(counts.entries())
     .map(([date, count]) => ({ date, count }))
-    .sort((a, b) => {
-      if (a.date === b.date) return 0;
-      if (a.date === "unknown") return 1;
-      if (b.date === "unknown") return -1;
-      return a.date < b.date ? 1 : -1;
-    })
+    .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 7);
 };
+
 const uploadMissionFileToStorage = async (missionId, file) => {
   const objectPath = buildMissionFileObjectPath(
     missionId,
@@ -787,21 +813,26 @@ app.post("/api/login", async (req, res) => {
 
 app.post("/api/focus-sessions", async (req, res) => {
   try {
-    const userId = req.body.user_id;
+    const userId = parsePositiveId(req.body.user_id);
     if (!userId) {
       return res.status(400).json({ error: "user_id is required" });
     }
 
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     const plannedMinutes = clampInt(req.body.planned_minutes, 1, 240, 15);
-    const missionId = req.body.mission_id == null || req.body.mission_id === "" ? null : Number(req.body.mission_id);
-    const fileId = req.body.file_id == null || req.body.file_id === "" ? null : Number(req.body.file_id);
+    const missionId = parseOptionalId(req.body.mission_id);
+    const fileId = parseOptionalId(req.body.file_id);
 
     const rows = await supabaseTable("focus_sessions", {
       method: "POST",
       body: {
-        user_id: Number(userId),
-        mission_id: Number.isFinite(missionId) ? missionId : null,
-        file_id: Number.isFinite(fileId) ? fileId : null,
+        user_id: userId,
+        mission_id: missionId,
+        file_id: fileId,
         planned_minutes: plannedMinutes,
       },
       returnRepresentation: true,
@@ -815,14 +846,14 @@ app.post("/api/focus-sessions", async (req, res) => {
 
 app.patch("/api/focus-sessions/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: "Session id is required" });
+    const sessionId = parsePositiveId(req.params.id);
+    if (!sessionId) {
+      return res.status(400).json({ error: "Valid session id is required" });
     }
 
     const body = {};
     if (Object.prototype.hasOwnProperty.call(req.body, "completed")) {
-      body.completed = Boolean(req.body.completed);
+      body.completed = parseBoolean(req.body.completed);
     }
     if (Object.prototype.hasOwnProperty.call(req.body, "ended_at")) {
       body.ended_at = req.body.ended_at == null ? null : String(req.body.ended_at);
@@ -837,7 +868,7 @@ app.patch("/api/focus-sessions/:id", async (req, res) => {
 
     const rows = await supabaseTable("focus_sessions", {
       method: "PATCH",
-      filters: [{ column: "id", value: id }],
+      filters: [{ column: "id", value: sessionId }],
       body,
       returnRepresentation: true,
     });
@@ -854,23 +885,38 @@ app.patch("/api/focus-sessions/:id", async (req, res) => {
 
 app.post("/api/distraction-events", async (req, res) => {
   try {
-    const userId = req.body.user_id;
+    const userId = parsePositiveId(req.body.user_id);
     if (!userId) {
       return res.status(400).json({ error: "user_id is required" });
     }
 
+    const user = await getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     const reason = String(req.body.reason || "attention_drift").slice(0, 120) || "attention_drift";
-    const sessionId = req.body.session_id == null || req.body.session_id === "" ? null : Number(req.body.session_id);
-    const missionId = req.body.mission_id == null || req.body.mission_id === "" ? null : Number(req.body.mission_id);
-    const fileId = req.body.file_id == null || req.body.file_id === "" ? null : Number(req.body.file_id);
+    const sessionId = parseOptionalId(req.body.session_id);
+    const missionId = parseOptionalId(req.body.mission_id);
+    const fileId = parseOptionalId(req.body.file_id);
+
+    if (sessionId) {
+      const session = await getFocusSessionById(sessionId);
+      if (!session) {
+        return res.status(404).json({ error: "Focus session not found" });
+      }
+      if (session.user_id !== userId) {
+        return res.status(400).json({ error: "Focus session does not belong to user_id" });
+      }
+    }
 
     const rows = await supabaseTable("distraction_events", {
       method: "POST",
       body: {
-        session_id: Number.isFinite(sessionId) ? sessionId : null,
-        user_id: Number(userId),
-        mission_id: Number.isFinite(missionId) ? missionId : null,
-        file_id: Number.isFinite(fileId) ? fileId : null,
+        session_id: sessionId,
+        user_id: userId,
+        mission_id: missionId,
+        file_id: fileId,
         reason,
       },
       returnRepresentation: true,
@@ -884,7 +930,7 @@ app.post("/api/distraction-events", async (req, res) => {
 
 app.get("/api/focus-insights", async (req, res) => {
   try {
-    const userId = req.query.user_id || req.body.user_id;
+    const userId = parsePositiveId(req.query.user_id || req.body.user_id);
     if (!userId) {
       return res.status(400).json({ error: "user_id is required" });
     }
@@ -903,7 +949,9 @@ app.get("/api/focus-insights", async (req, res) => {
         ],
         order: "id.asc",
       });
-      childIds = (children || []).map((row) => row.id).filter((value) => value != null);
+      childIds = (children || [])
+        .map((row) => parsePositiveId(row.id))
+        .filter((value) => value != null);
     }
 
     if (!childIds.length) {
@@ -918,30 +966,41 @@ app.get("/api/focus-insights", async (req, res) => {
       });
     }
 
-    const [sessionRows, eventRows] = await Promise.all([
+    const childFilter = buildIdInFilter(childIds);
+    const [sessionRows, eventRows, recentSessionRows, recentEventRows] = await Promise.all([
       supabaseTable("focus_sessions", {
-        filters: [{ column: "user_id", operator: "in", value: `(${childIds.join(",")})` }],
-        order: "created_at.desc",
-        limit: 20,
+        filters: [{ column: "user_id", operator: "in", value: childFilter }],
+        order: "started_at.desc",
       }),
       supabaseTable("distraction_events", {
-        filters: [{ column: "user_id", operator: "in", value: `(${childIds.join(",")})` }],
+        filters: [{ column: "user_id", operator: "in", value: childFilter }],
         order: "created_at.desc",
-        limit: 200,
+      }),
+      supabaseTable("focus_sessions", {
+        filters: [{ column: "user_id", operator: "in", value: childFilter }],
+        order: "started_at.desc",
+        limit: 5,
+      }),
+      supabaseTable("distraction_events", {
+        filters: [{ column: "user_id", operator: "in", value: childFilter }],
+        order: "created_at.desc",
+        limit: 5,
       }),
     ]);
 
     const sessions = (sessionRows || []).map(normalizeFocusSession);
     const events = (eventRows || []).map(normalizeDistractionEvent);
+    const recentSessions = (recentSessionRows || []).map(normalizeFocusSession);
+    const recentEvents = (recentEventRows || []).map(normalizeDistractionEvent);
 
     res.json({
       total_sessions: sessions.length,
       completed_sessions: sessions.filter((session) => session.completed).length,
       planned_minutes: sessions.reduce((sum, session) => sum + (session.planned_minutes || 0), 0),
       distraction_events: events.length,
-      recent_sessions: sessions.slice(0, 5),
+      recent_sessions: recentSessions,
       daily_pauses: buildDailyPauseBreakdown(events),
-      recent_events: events.slice(0, 5),
+      recent_events: recentEvents,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -989,14 +1048,14 @@ app.post("/api/missions", upload.array("files"), async (req, res) => {
 
 app.get("/api/missions", async (req, res) => {
   try {
-    // Æ¯u tiÃªn láº¥y tá»« query (best practice cho GET), hoáº·c fallback sang body náº¿u báº¡n váº«n muá»‘n giá»¯ body
+    // Ưu tiên lấy từ query (best practice cho GET), hoặc fallback sang body nếu bạn vẫn muốn giữ body
     const userId = req.query.user_id || req.body.user_id;
 
     if (!userId) {
       return res.status(400).json({ error: "Missing user_id parameter" });
     }
 
-    // 1. Fetch thÃ´ng tin user tá»« báº£ng users
+    // 1. Fetch thông tin user từ bảng users
     const users = await supabaseTable("users", {
       filters: [{ column: "id", operator: "eq", value: userId }],
       limit: 1,
@@ -1009,7 +1068,7 @@ app.get("/api/missions", async (req, res) => {
     const user = users[0];
     let targetParentId;
 
-    // 2. Kiá»ƒm tra role Ä‘á»ƒ xÃ¡c Ä‘á»‹nh parent_id cáº§n dÃ¹ng Ä‘á»ƒ lá»c missions
+    // 2. Kiểm tra role để xác định parent_id cần dùng để lọc missions
     if (user.role === "parent") {
       targetParentId = user.id;
     } else if (user.role === "child") {
@@ -1023,13 +1082,13 @@ app.get("/api/missions", async (req, res) => {
       return res.status(403).json({ error: "Invalid user role" });
     }
 
-    // 3. Truyá»n filter parent_id vÃ o hÃ m getMissionRows
+    // 3. Truyền filter parent_id vào hàm getMissionRows
     const filters = [
       { column: "parent_id", operator: "eq", value: targetParentId },
     ];
     const missions = await getMissionRows(filters);
 
-    // 4. Láº¥y cÃ¡c relations (giá»¯ nguyÃªn logic cÅ© cá»§a báº¡n)
+    // 4. Lấy các relations (giữ nguyên logic cũ của bạn)
     const withRelations = await Promise.all(
       missions.map((mission) => getMissionById(mission.id)),
     );
