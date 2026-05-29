@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ChevronDown, Play, Star, Target, Trophy } from "lucide-react";
+import { Check, Compass, Leaf, Play, Sparkles, Star, Target } from "lucide-react";
 import ChildNavBar from "../components/ChildNavBar";
 import RankIcon from "../components/RankIcon";
 import type { Mission, User } from "../types";
@@ -14,18 +14,21 @@ import {
   getRewardProfile,
   getStoredUser,
 } from "../utils/rewards";
+import { loadFocusPreferences } from "../utils/preferences";
 import "../assets/dashboard.css";
 
 export default function ChildDashboard() {
   const navigate = useNavigate();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [user, setUser] = useState<User | null>(() => getStoredUser());
-  const [expandStats, setExpandStats] = useState(false);
   const storedUser = localStorage.getItem("focuskid_user");
   const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user_id = parsedUser.id;
+  const user_id = parsedUser?.id;
+  const preferences = loadFocusPreferences();
 
   useEffect(() => {
+    if (!user_id) return;
+
     fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
       .then((r) => r.json())
       .then((data) => setMissions(data))
@@ -34,29 +37,24 @@ export default function ChildDashboard() {
     fetchCurrentUser()
       .then((latestUser) => setUser(latestUser))
       .catch((e) => console.error(e));
-  }, []);
+  }, [user_id]);
 
-  const recentMissions = missions.slice(0, 3);
   const rewardProfile = getRewardProfile(user?.xp || 0);
-  const missionStats = missions.reduce(
-    (totals, mission) => {
-      const progress = getMissionProgress(mission);
-      return {
-        totalMissions: totals.totalMissions + 1,
-        completedMissions:
-          totals.completedMissions +
-          (progress.total > 0 && progress.completed >= progress.total ? 1 : 0),
-        completedItems: totals.completedItems + progress.completed,
-        totalItems: totals.totalItems + progress.total,
-      };
-    },
-    {
-      totalMissions: 0,
-      completedMissions: 0,
-      completedItems: 0,
-      totalItems: 0,
-    },
-  );
+  const activeMission =
+    missions.find((mission) => getMissionProgress(mission).percentage < 100) ||
+    missions[0] ||
+    null;
+  const activeProgress = activeMission ? getMissionProgress(activeMission) : null;
+  const completedMissions = missions.filter(
+    (mission) => getMissionProgress(mission).percentage === 100,
+  ).length;
+  const nextStepLabel = activeMission
+    ? getMissionStartItem(activeMission).type === "quiz"
+      ? "Answer a short quiz"
+      : getMissionStartItem(activeMission).type === "file"
+        ? "Read one calm file"
+        : "Start a focus timer"
+    : "Wait for a parent mission";
 
   const startMission = (mission: Mission) => {
     const startItem = getMissionStartItem(mission);
@@ -75,192 +73,122 @@ export default function ChildDashboard() {
   };
 
   return (
-    <div className="dashboard-page child-dashboard">
+    <div className="dashboard-page child-dashboard calm-child-dashboard">
       <ChildNavBar />
 
-      <main className="dashboard-container">
-        <div className="dashboard-grid">
-          <section className="dashboard-main">
-            <div className="hero-banner child-hero">
-              <div>
-                <h1>Hi, ready for a mission?</h1>
-                <p>
-                  Pick one task, focus for a short time, and earn your reward.
-                </p>
-              </div>
-              <div className="hero-badges">
-                <span
-                  className="rank-badge"
-                  style={{ color: rewardProfile.rank.color }}
-                >
-                  <RankIcon
-                    rank={rewardProfile.rank}
-                    className="rank-badge-icon"
-                  />
-                  {rewardProfile.rank.name}
-                </span>
-                <span>{rewardProfile.xp} XP</span>
-              </div>
-            </div>
-            <div className="card level-progress-card">
-              <div className="title-row">
-                <h2>Reward Progress</h2>
-                <span className="xp">{rewardProfile.xp} XP</span>
-              </div>
-              <div className="progress-track">
+      <main className="dashboard-container calm-child-container">
+        <section className="calm-hero-card" aria-label="Today focus mission">
+          <div className="calm-hero-copy">
+            <p className="calm-eyebrow">Today's small adventure</p>
+            <h1>Hi {user?.name || "there"}, let's do one gentle step.</h1>
+            <p>
+              Focus for {preferences.focusLength} minutes, then take a short
+              reset. One step is enough to make progress.
+            </p>
+          </div>
+          <div className="calm-rank-orb" style={{ borderColor: rewardProfile.rank.color }}>
+            <RankIcon rank={rewardProfile.rank} className="calm-rank-icon" />
+            <strong>{rewardProfile.rank.name}</strong>
+            <span>{rewardProfile.xp} XP</span>
+          </div>
+        </section>
+
+        <div className="calm-dashboard-grid">
+          <section className="calm-main-mission">
+            {activeMission ? (
+              <article className="calm-mission-card">
+                <div className="calm-mission-topline">
+                  <span className="calm-pill"><Compass className="icon-xs" /> Next step</span>
+                  <span>{getMissionTimeLabel(activeMission)}</span>
+                </div>
+                <h2>{activeMission.title}</h2>
+                <p>{nextStepLabel}. Keep it slow, steady, and kind.</p>
+
                 <div
-                  className="progress-fill"
-                  style={{
-                    width: `${rewardProfile.rankProgress}%`,
-                    backgroundColor: rewardProfile.rank.color,
-                  }}
-                />
-              </div>
-              <p className="subtext">
-                {rewardProfile.nextRank
-                  ? `${rewardProfile.xpToNextRank} XP to ${rewardProfile.nextRank.name}`
-                  : "Top rank reached"}
-              </p>
-            </div>
-            <div className="missions-block">
-              <div className="title-row">
-                <h2 className="missions-heading">Your Missions</h2>
-                {missions.length > 3 && (
-                  <button
-                    type="button"
-                    className="link-btn"
-                    onClick={() => navigate("/child/missions")}
-                  >
-                    View all
-                  </button>
-                )}
-              </div>
+                  className="calm-progress-track"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={activeProgress?.percentage || 0}
+                  aria-label="Mission progress"
+                >
+                  <div
+                    className="calm-progress-fill"
+                    style={{ width: `${activeProgress?.percentage || 0}%` }}
+                  />
+                </div>
+                <div className="calm-progress-meta">
+                  <span>{activeProgress?.label || "0/0"} steps done</span>
+                  <strong>{activeProgress?.percentage || 0}%</strong>
+                </div>
 
-              <div className="mission-list">
-                {missions.length === 0 && (
-                  <p className="subtext">
-                    No missions yet. Ask a parent to assign one.
-                  </p>
-                )}
-                {recentMissions.map((mission) => {
-                  const progress = getMissionProgress(mission);
-
-                  return (
-                    <article className="card mission-card" key={mission.id}>
-                      <div className="mission-header-row">
-                        <div className="mission-icon">
-                          {mission.icon || "M"}
-                        </div>
-                        <div className="mission-content">
-                          <div className="mission-top">
-                            <h3>{mission.title}</h3>
-                            <div className="mission-time-toggle">
-                              <span>{getMissionTimeLabel(mission)}</span>
-                            </div>
-                          </div>
-                          <div className="mission-progress-row">
-                            <div className="progress-track slim">
-                              <div
-                                className="progress-fill colored"
-                                style={{
-                                  width: `${progress.percentage}%`,
-                                  backgroundColor: mission.color || "#8FB8A8",
-                                }}
-                              />
-                            </div>
-                            <strong>{progress.percentage}%</strong>
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ marginTop: 12 }}>
-                        <button
-                          className="start-btn attention"
-                          onClick={() => startMission(mission)}
-                        >
-                          <Play className="icon-xs" />
-                          <span>Start</span>
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
+                <button
+                  className="calm-start-button"
+                  onClick={() => startMission(activeMission)}
+                >
+                  <Play className="icon-sm" /> Start this small step
+                </button>
+              </article>
+            ) : (
+              <article className="calm-mission-card empty">
+                <span className="calm-pill"><Leaf className="icon-xs" /> Calm start</span>
+                <h2>No mission yet</h2>
+                <p>Ask your parent to add one small reading mission for today.</p>
+              </article>
+            )}
           </section>
 
-          <aside className="dashboard-side">
-            <div className="card stats-card">
-              <div className="stats-header">
-                <h3>Your Stats</h3>
-                <button
-                  type="button"
-                  className="stats-toggle"
-                  onClick={() => setExpandStats(!expandStats)}
-                >
-                  <ChevronDown
-                    className={`icon-sm stats-chevron ${expandStats ? "rotated" : ""}`}
-                  />
-                </button>
-              </div>
-
-              <div className="stat-item">
-                <div className="stat-icon blue">
-                  <Star className="stat-svg" />
-                </div>
-                <div>
-                  <div className="stat-value">{rewardProfile.xp}</div>
-                  <div className="stat-label">XP Earned</div>
-                </div>
-              </div>
-
-              {expandStats && (
-                <>
-                  <div className="stat-item">
-                    <div className="stat-icon green">
-                      <Target className="stat-svg" />
-                    </div>
-                    <div>
-                      <div className="stat-value">
-                        {missionStats.totalMissions}
-                      </div>
-                      <div className="stat-label">Missions Assigned</div>
-                    </div>
-                  </div>
-
-                  <div className="stat-item">
-                    <div className="stat-icon orange">
-                      <Check className="stat-svg" />
-                    </div>
-                    <div>
-                      <div className="stat-value">
-                        {missionStats.completedItems}/{missionStats.totalItems}
-                      </div>
-                      <div className="stat-label">Tasks Completed</div>
-                    </div>
-                  </div>
-
-                  <div className="stat-item">
-                    <div className="stat-icon sky">
-                      <Trophy className="stat-svg" />
-                    </div>
-                    <div>
-                      <div className="stat-value">
-                        {missionStats.completedMissions}
-                      </div>
-                      <div className="stat-label">Missions Done</div>
-                    </div>
-                  </div>
-                </>
-              )}
+          <aside className="calm-support-stack">
+            <div className="calm-support-card lavender">
+              <Sparkles className="icon" />
+              <h3>Reset plan</h3>
+              <p>After focus time, take a {preferences.breakLength}-minute quiet break.</p>
             </div>
-
-            <div className="card motivation-card">
-              <div className="emoji">OK</div>
-              <h3>Ready to Learn</h3>
-              <p>Pick a mission and start a short focused session.</p>
+            <div className="calm-support-card mint">
+              <Star className="icon" />
+              <h3>Reward path</h3>
+              <p>
+                {rewardProfile.nextRank
+                  ? `${rewardProfile.xpToNextRank} XP to ${rewardProfile.nextRank.name}`
+                  : "You reached the top rank."}
+              </p>
+            </div>
+            <div className="calm-support-card cream">
+              <Target className="icon" />
+              <h3>Today summary</h3>
+              <p>{completedMissions}/{missions.length} missions completed.</p>
             </div>
           </aside>
         </div>
+
+        {missions.length > 1 && (
+          <section className="calm-mini-list" aria-label="Other missions">
+            <div className="title-row">
+              <h2>Other calm choices</h2>
+              <button type="button" className="link-btn" onClick={() => navigate("/child/missions")}>
+                View all
+              </button>
+            </div>
+            <div className="mission-list">
+              {missions.slice(0, 3).map((mission) => {
+                const progress = getMissionProgress(mission);
+                return (
+                  <article className="card mission-card calm-mini-card" key={mission.id}>
+                    <div className="mission-header-row">
+                      <div className="mission-icon">{progress.percentage === 100 ? <Check /> : "M"}</div>
+                      <div className="mission-content">
+                        <div className="mission-top">
+                          <h3>{mission.title}</h3>
+                          <span>{progress.percentage}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

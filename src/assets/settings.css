@@ -247,6 +247,88 @@
 	font-size: 14px;
 }
 
+.calm-settings-page {
+	background:
+		radial-gradient(circle at 12% 8%, rgba(196, 230, 214, 0.76), transparent 26%),
+		radial-gradient(circle at 90% 14%, rgba(240, 238, 252, 0.9), transparent 28%),
+		linear-gradient(135deg, #f8fbf6, #fff9ea);
+}
+
+.calm-settings-header {
+	border: 1px solid rgba(82, 126, 112, 0.16);
+	border-radius: 28px;
+	background: rgba(255, 255, 255, 0.78);
+	box-shadow: 0 18px 42px rgba(41, 83, 72, 0.08);
+	padding: 28px;
+}
+
+.calm-settings-header h1 {
+	max-width: 760px;
+	color: #193f39;
+	font-size: clamp(34px, 5vw, 54px);
+	line-height: 1.05;
+}
+
+.calm-settings-header p:not(.calm-eyebrow) {
+	max-width: 720px;
+	color: #55736a;
+	font-size: 17px;
+	line-height: 1.55;
+}
+
+.calm-panel,
+.calm-side-card,
+.calm-safety-card {
+	border: 1px solid rgba(82, 126, 112, 0.16);
+	border-radius: 24px;
+	box-shadow: 0 18px 42px rgba(41, 83, 72, 0.08);
+}
+
+.calm-title-row {
+	align-items: flex-start;
+}
+
+.calm-title-row h2 {
+	color: #193f39;
+}
+
+.calm-title-row p {
+	margin: 4px 0 0;
+	color: #55736a;
+	line-height: 1.45;
+}
+
+.calm-range-block {
+	border-radius: 18px;
+	background: #f8fbf6;
+	border: 1px solid #dcebe4;
+	padding: 16px;
+}
+
+.calm-toggle-item {
+	border: 1px solid #dcebe4;
+	border-radius: 18px;
+	background: #ffffff;
+	padding: 16px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.calm-toggle-item:hover,
+.calm-toggle-item:focus-visible {
+	background: #f8fbf6;
+	outline: 3px solid rgba(143, 184, 168, 0.32);
+}
+
+.calm-summary-list div {
+	border-bottom: 1px solid #edf3ef;
+	padding: 10px 0;
+}
+
+.calm-safety-card {
+	background: #fbf1d8;
+}
+
 @media (max-width: 1120px) {
 	.settings-layout {
 		grid-template-columns: 1fr;

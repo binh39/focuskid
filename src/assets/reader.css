@@ -628,6 +628,90 @@
   background: #eef6f2;
 }
 
+.calm-pause-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(25, 63, 57, 0.38);
+  backdrop-filter: blur(8px);
+  padding: 20px;
+}
+
+.calm-pause-card {
+  width: min(420px, 100%);
+  border: 1px solid rgba(143, 184, 168, 0.45);
+  border-radius: 28px;
+  background: linear-gradient(160deg, #ffffff, #f6fbf7);
+  box-shadow: 0 28px 80px rgba(25, 63, 57, 0.24);
+  padding: 30px;
+  text-align: center;
+}
+
+.calm-pause-icon {
+  width: 86px;
+  height: 86px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: #edf7f2;
+  color: #527e70;
+  display: grid;
+  place-items: center;
+}
+
+.calm-pause-card h2 {
+  margin: 0 0 10px;
+  color: #193f39;
+  font-size: 28px;
+}
+
+.calm-pause-card p {
+  margin: 0 0 22px;
+  color: #55736a;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.calm-resume-btn {
+  width: 100%;
+  min-height: 52px;
+}
+
+.calm-focus-card {
+  border: 1px solid #dcebe4;
+  background: #ffffff;
+}
+
+.calm-camera-consent {
+  border-radius: 18px;
+  background: #f8fbf6;
+  border: 1px solid #dcebe4;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.calm-camera-icon {
+  width: 42px;
+  height: 42px;
+  color: #527e70;
+}
+
+.calm-camera-consent h4 {
+  margin: 0;
+  color: #193f39;
+}
+
+.calm-camera-consent p {
+  margin: 0;
+  color: #55736a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 @media (max-width: 1100px) {
   .reader-layout {
     grid-template-columns: 1fr;

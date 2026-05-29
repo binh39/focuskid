@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>FocusKid implementation notes</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; margin: 32px; color: #1f2937; background: #fbf8f1; }
+      h1, h2 { color: #234f48; }
+      section { background: #fff; border: 1px solid #dbe8df; border-radius: 16px; padding: 20px; margin: 16px 0; }
+      code { background: #eef6f2; padding: 2px 6px; border-radius: 6px; }
+      ul { padding-left: 22px; }
+    </style>
+  </head>
+  <body>
+    <h1>FocusKid ADHD/HCI redesign notes</h1>
+
+    <section>
+      <h2>Decisions not specified in the original request</h2>
+      <ul>
+        <li>Chọn hướng thiết kế Calm Adventure cho trẻ 8-12 tuổi: vui nhưng ít nhiễu, dùng màu pastel dịu và một hành động chính trên mỗi màn.</li>
+        <li>Đặt thời lượng tập trung mặc định là 15 phút thay vì 25 phút để phù hợp hơn với trẻ ADHD.</li>
+        <li>Thêm <code>focusHelperEnabled</code> vào preferences để camera helper có thể tắt/bật thay vì luôn tạo cảm giác bị theo dõi.</li>
+        <li>Đổi camera từ tự bật sang opt-in: trẻ chủ động bấm Start helper sau khi đọc giải thích quyền riêng tư.</li>
+        <li>Đổi popup mất tập trung từ cảnh báo đỏ sang dialog nghỉ nhẹ, dùng ngôn ngữ khuyến khích thay vì trách phạt.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Changes from the existing code</h2>
+      <ul>
+        <li>Thêm utility preferences có kiểm thử để lưu cài đặt tập trung vào <code>localStorage</code>.</li>
+        <li>Chuyển Settings từ UI local-only thành cài đặt có tác dụng cho timer/camera/sound reminder.</li>
+        <li>Thiết kế lại Child Dashboard thành màn một nhiệm vụ chính hôm nay, giảm cụm thống kê và sidebar kiểu người lớn.</li>
+        <li>Làm mềm Reader focus helper: camera optional, có safety copy, nút stop, và popup pause nhẹ.</li>
+        <li>Thêm CSS Calm Adventure với nền pastel, card bo tròn, màu mint/cream/lavender và progress semantic.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Tradeoffs</h2>
+      <ul>
+        <li>Dùng <code>localStorage</code> thay vì backend để hoàn thành nhanh trong phạm vi frontend/HCI prototype; dữ liệu đủ ổn cho demo nhưng chưa đồng bộ đa thiết bị.</li>
+        <li>Giữ cấu trúc file hiện tại để thay đổi tập trung, tránh refactor lớn ngoài phạm vi UI/UX.</li>
+        <li>Chưa làm hệ thống i18n đầy đủ; copy mới ưu tiên tiếng Anh nhất quán với phần lớn UI hiện có.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Change log by file/folder</h2>
+      <ul>
+        <li><code>src/utils/preferences.ts</code>: thêm model cài đặt tập trung, default ADHD-friendly, clamp thời lượng an toàn và hàm load/save.</li>
+        <li><code>src/utils/preferences.test.ts</code>: thêm Vitest tests chứng minh default, clamp và persistence hoạt động.</li>
+        <li><code>src/components/SettingsView.tsx</code>: thiết kế lại settings thành Focus rhythm, Gentle support, Calm plan và Safety note; thêm switch ARIA.</li>
+        <li><code>src/pages/ChildDashboard.tsx</code>: chuyển dashboard trẻ thành Calm Adventure với nhiệm vụ chính, CTA lớn, rank orb, reset plan và reward path.</li>
+        <li><code>src/components/FocusCameraPanel.tsx</code>: bỏ auto-start camera, thêm consent UI, stop button, trạng thái helper off và copy riêng tư.</li>
+        <li><code>src/pages/ChildReader.tsx</code>: giảm âm lượng cue, dùng preferences, popup pause nhẹ có role dialog/focus, và không resume timer khi helper vẫn đang báo mất tập trung.</li>
+        <li><code>src/assets/dashboard.css</code>: thêm style Calm Adventure cho child dashboard.</li>
+        <li><code>src/assets/settings.css</code>: thêm style pastel/accessible cho settings mới.</li>
+        <li><code>src/assets/reader.css</code>: thêm style cho pause dialog và camera consent.</li>
+        <li><code>package.json/package-lock.json</code>: thêm Vitest làm dev dependency để kiểm thử frontend utility.</li>
+      </ul>
+    </section>
+  </body>
+</html>

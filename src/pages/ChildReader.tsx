@@ -7,9 +7,9 @@ import {
   ChevronRight,
   FileText,
   HelpCircle,
+  Leaf,
   Pause,
   Play,
-  AlertTriangle,
 } from "lucide-react";
 import RankIcon from "../components/RankIcon";
 import FocusCameraPanel from "../components/FocusCameraPanel";
@@ -23,6 +23,7 @@ import {
   type RewardRank,
   type RewardResult,
 } from "../utils/rewards";
+import { loadFocusPreferences } from "../utils/preferences";
 import "../assets/reader.css";
 
 const quizOptions = (quiz: MissionQuiz) => [
@@ -32,11 +33,13 @@ const quizOptions = (quiz: MissionQuiz) => [
   { key: "D" as QuizOption, text: quiz.option_d },
 ];
 
-// Hàm tạo tiếng Beep báo động với âm lượng lớn (0.8)
-const playBeep = () => {
+const playSoftCue = () => {
   try {
+    const audioWindow = window as Window & {
+      webkitAudioContext?: typeof AudioContext;
+    };
     const AudioContextClass =
-      window.AudioContext || (window as any).webkitAudioContext;
+      window.AudioContext || audioWindow.webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
 
@@ -46,8 +49,8 @@ const playBeep = () => {
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.type = "sine";
-      osc.frequency.setValueAtTime(800, ctx.currentTime + timeOffset);
-      gain.gain.setValueAtTime(0.8, ctx.currentTime + timeOffset);
+      osc.frequency.setValueAtTime(520, ctx.currentTime + timeOffset);
+      gain.gain.setValueAtTime(0.16, ctx.currentTime + timeOffset);
       osc.start(ctx.currentTime + timeOffset);
       osc.stop(ctx.currentTime + timeOffset + 0.15);
     };
@@ -125,25 +128,37 @@ export default function ChildReader() {
   );
   const [isRunning, setIsRunning] = useState(false);
 
-  // --- STATE QUẢN LÝ TẬP TRUNG ---
   const [isDistractedState, setIsDistractedState] = useState(false);
   const [showDistractionPopup, setShowDistractionPopup] = useState(false);
+  const [wasRunningBeforePause, setWasRunningBeforePause] = useState(false);
+  const resumeButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Logic tính phần trăm chạy ngược (Giảm dần từ 100% về 0%)
   const progressPercent =
     totalSeconds > 0 ? (timeLeft / totalSeconds) * 100 : 0;
 
   const handleDistractionChange = useCallback((isDistracted: boolean) => {
+    const preferences = loadFocusPreferences();
+    if (!preferences.notificationsEnabled) {
+      setIsDistractedState(false);
+      return;
+    }
+
     setIsDistractedState((prev) => {
       if (!prev && isDistracted) {
         setShowDistractionPopup(true);
+        setWasRunningBeforePause(isRunning);
         setIsRunning(false);
-        playBeep();
+        if (preferences.soundEnabled) playSoftCue();
       }
       return isDistracted;
     });
-  }, []);
-  // ---------------------------------
+  }, [isRunning]);
+
+  useEffect(() => {
+    if (showDistractionPopup) {
+      resumeButtonRef.current?.focus();
+    }
+  }, [showDistractionPopup]);
 
   const fileUrl = useMemo(() => {
     if (!selectedFile?.file_path) return null;
@@ -317,69 +332,33 @@ export default function ChildReader() {
       {/* --- POPUP MẤT TẬP TRUNG --- */}
       {showDistractionPopup && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            backdropFilter: "blur(4px)",
-          }}
+          className="calm-pause-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="calm-pause-title"
         >
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "32px",
-              borderRadius: "16px",
-              textAlign: "center",
-              maxWidth: "400px",
-              width: "90%",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: "16px",
-                color: "#ef4444",
-              }}
-            >
-              <AlertTriangle size={64} />
+          <div className="calm-pause-card">
+            <div className="calm-pause-icon">
+              <Leaf size={56} />
             </div>
-            <h2
-              style={{
-                fontSize: "24px",
-                fontWeight: "bold",
-                color: "#111827",
-                marginBottom: "12px",
-              }}
-            >
-              Bạn đang mất tập trung!
-            </h2>
-            <p
-              style={{
-                color: "#4b5563",
-                fontSize: "16px",
-                marginBottom: "24px",
-              }}
-            >
-              Thời gian đã được tạm dừng. Hãy nhìn lại vào màn hình để tiếp tục
-              bài học nhé.
+            <h2 id="calm-pause-title">Take a calm breath</h2>
+            <p>
+              The timer paused for a moment. Look back at the lesson when you
+              feel ready. No rush.
             </p>
 
             <button
-              className="timer-btn"
-              style={{ width: "100%", justifyContent: "center" }}
+              ref={resumeButtonRef}
+              className="timer-btn calm-resume-btn"
               onClick={() => {
                 setShowDistractionPopup(false);
-                setIsRunning(true);
+                if (!isDistractedState) {
+                  setIsRunning(wasRunningBeforePause);
+                }
               }}
             >
               <Play className="icon" />
-              Tiếp tục
+              {isDistractedState ? "I will look back first" : "I'm ready"}
             </button>
           </div>
         </div>
@@ -405,7 +384,7 @@ export default function ChildReader() {
               </button>
               <div className="reader-title">
                 {selectedQuiz ? (
-                  <span className="reader-quiz-titletext">Quizz</span>
+                  <span className="reader-quiz-titletext">Quiz</span>
                 ) : (
                   <>{mission?.title || "Reading Task"}</>
                 )}
@@ -583,7 +562,7 @@ export default function ChildReader() {
                   >
                     <HelpCircle className="icon-xs" />
                     <span>
-                      <strong>Quizz</strong>
+                      <strong>Quiz</strong>
                       <small>{quizzes.length} Questions</small>
                     </span>
                   </button>

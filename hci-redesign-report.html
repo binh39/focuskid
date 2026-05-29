@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FocusKid - Báo cáo cải tiến HCI cho trẻ ADHD</title>
+    <style>
+      :root {
+        --ink: #193f39;
+        --muted: #58756d;
+        --line: #dcebe4;
+        --mint: #eaf7f0;
+        --cream: #fff4d9;
+        --lavender: #f0eefc;
+        --card: rgba(255, 255, 255, 0.88);
+        --accent: #315f55;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Nunito", "Segoe UI", Arial, sans-serif;
+        background:
+          radial-gradient(circle at 10% 8%, rgba(196, 230, 214, 0.9), transparent 28%),
+          radial-gradient(circle at 88% 10%, rgba(240, 238, 252, 0.9), transparent 26%),
+          linear-gradient(135deg, #f8fbf6 0%, #fff9ea 100%);
+        line-height: 1.65;
+      }
+      .page { width: min(1180px, calc(100% - 36px)); margin: 0 auto; padding: 36px 0 64px; }
+      .hero, .card, .shot, .summary-box {
+        border: 1px solid rgba(82, 126, 112, 0.18);
+        border-radius: 28px;
+        background: var(--card);
+        box-shadow: 0 20px 52px rgba(41, 83, 72, 0.1);
+      }
+      .hero { padding: 36px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: center; }
+      .eyebrow { margin: 0 0 10px; color: #527e70; font-size: 13px; font-weight: 900; letter-spacing: 0.09em; text-transform: uppercase; }
+      h1 { max-width: 850px; margin: 0; font-size: clamp(34px, 5vw, 60px); line-height: 1.04; }
+      .hero p:not(.eyebrow) { max-width: 760px; margin: 16px 0 0; color: var(--muted); font-size: 18px; }
+      .score { width: 150px; height: 150px; border-radius: 999px; display: grid; place-items: center; align-content: center; gap: 4px; border: 4px solid #8fb8a8; background: linear-gradient(160deg, #ffffff, #eef8f3); text-align: center; font-weight: 900; }
+      .score span { color: var(--muted); font-size: 13px; }
+      .score strong { font-size: 28px; }
+      section { margin-top: 26px; }
+      h2 { margin: 0 0 12px; font-size: 30px; line-height: 1.15; }
+      h3 { margin: 0 0 8px; font-size: 20px; }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+      .card { padding: 22px; }
+      .card p, .card li, .summary-box p, .summary-box li { color: var(--muted); }
+      .tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 7px 11px; background: var(--mint); color: var(--accent); font-size: 13px; font-weight: 900; margin-bottom: 12px; }
+      .shot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      .shot { padding: 16px; overflow: hidden; }
+      .shot img { width: 100%; display: block; border-radius: 20px; border: 1px solid var(--line); background: #fff; }
+      .shot figcaption { margin-top: 12px; color: var(--muted); font-size: 14px; }
+      .summary-box { padding: 26px; }
+      .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+      ul { padding-left: 22px; margin: 10px 0 0; }
+      li + li { margin-top: 8px; }
+      code { background: #edf7f2; padding: 2px 6px; border-radius: 7px; }
+      .checks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .check { border-radius: 20px; padding: 16px; background: #ffffff; border: 1px solid var(--line); }
+      .check strong { display: block; }
+      .check span { color: var(--muted); font-size: 14px; }
+      .footer { margin-top: 28px; color: var(--muted); text-align: center; }
+      @media (max-width: 900px) {
+        .hero, .shot-grid, .two-col, .grid, .checks { grid-template-columns: 1fr; }
+        .score { width: 128px; height: 128px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">FocusKid HCI redesign</p>
+          <h1>Cải tiến UI/UX cho trẻ ADHD 8-12 tuổi theo hướng Calm Adventure</h1>
+          <p>
+            Báo cáo này tổng hợp các thay đổi đã thực hiện, ảnh minh hoạ chụp từ dev server,
+            và lý do các thay đổi phù hợp hơn với nguyên tắc HCI cho trẻ ADHD: ít nhiễu,
+            nhẹ nhàng, có kiểm soát, và tập trung vào một bước nhỏ tại một thời điểm.
+          </p>
+        </div>
+        <div class="score" aria-label="Mức phù hợp sau cải tiến">
+          <span>ADHD UX</span>
+          <strong>Tốt hơn</strong>
+          <span>8-12 tuổi</span>
+        </div>
+      </header>
+
+      <section>
+        <h2>Ảnh minh hoạ sau cải tiến</h2>
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="report-child-dashboard.png" alt="Màn Child Dashboard mới với nhiệm vụ chính hôm nay" />
+            <figcaption>
+              <strong>Child Dashboard:</strong> chuyển từ dashboard nhiều thông tin sang màn “Today's small adventure”,
+              chỉ nhấn mạnh một bước học nhỏ và kế hoạch nghỉ ngắn.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="report-child-settings.png" alt="Màn Settings mới với focus rhythm và gentle support" />
+            <figcaption>
+              <strong>Settings:</strong> cài đặt focus time, reset break, âm thanh nhẹ, nhắc nhở tử tế và camera helper.
+              Các switch có semantic accessibility tốt hơn.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section>
+        <h2>Những thay đổi chính</h2>
+        <div class="grid">
+          <article class="card"><span class="tag">1 hành động chính</span><h3>Child Dashboard mới</h3><p>Dashboard được thiết kế lại để trẻ thấy ngay việc cần làm tiếp theo. Thay vì nhiều card thống kê, màn chính hiển thị một nhiệm vụ chính, tiến độ nhẹ nhàng, CTA lớn và các gợi ý reset.</p></article>
+          <article class="card"><span class="tag">Calm controls</span><h3>Settings có tác dụng thật</h3><p>Thêm hệ preferences lưu bằng <code>localStorage</code>: focus time, break time, soft sounds, kind reminders và focus helper camera. Giá trị được clamp để phù hợp trẻ 8-12 tuổi.</p></article>
+          <article class="card"><span class="tag">Privacy first</span><h3>Camera helper opt-in</h3><p>Camera không còn tự bật. Trẻ đọc giải thích trước, chủ động bấm Start helper, có nút Stop, và có thể tắt hoàn toàn trong Settings.</p></article>
+          <article class="card"><span class="tag">No shame</span><h3>Nhắc nhở mất tập trung nhẹ hơn</h3><p>Popup cảnh báo đỏ được thay bằng dialog “Take a calm breath”. Timer tạm dừng, âm cue nhỏ hơn, ngôn ngữ khuyến khích thay vì trách phạt.</p></article>
+          <article class="card"><span class="tag">Pastel system</span><h3>Màu sắc phù hợp ADHD</h3><p>Bảng màu chuyển sang mint, cream, lavender, sky và xanh lá đậm. Màu đỏ/cảnh báo được hạn chế để tránh tạo cảm giác bị phạt hoặc quá kích thích.</p></article>
+          <article class="card"><span class="tag">Accessibility</span><h3>Semantic tốt hơn</h3><p>Thêm semantic cho switch settings, progressbar dashboard, dialog mất tập trung có label/focus, giúp giao diện dễ dùng hơn với keyboard và assistive technologies.</p></article>
+        </div>
+      </section>
+
+      <section class="two-col">
+        <article class="summary-box">
+          <h2>Ưu điểm HCI cho trẻ ADHD</h2>
+          <ul>
+            <li><strong>Giảm cognitive load:</strong> trẻ nhìn thấy một nhiệm vụ chính thay vì nhiều số liệu cạnh tranh.</li>
+            <li><strong>Chia nhỏ hành động:</strong> copy nhấn mạnh “one gentle step”, phù hợp chiến lược micro-task.</li>
+            <li><strong>Không gây xấu hổ:</strong> thông báo mất tập trung chuyển từ cảnh báo sang hỗ trợ quay lại bài.</li>
+            <li><strong>Tăng cảm giác kiểm soát:</strong> camera helper có opt-in, stop button và cài đặt bật/tắt.</li>
+            <li><strong>Nhịp học ngắn:</strong> mặc định focus 15 phút và break 5 phút phù hợp hơn nhóm 8-12 tuổi ADHD.</li>
+            <li><strong>Thưởng vừa đủ:</strong> vẫn giữ XP/rank nhưng không để reward lấn át nhiệm vụ chính.</li>
+          </ul>
+        </article>
+
+        <article class="summary-box">
+          <h2>Files đã thay đổi</h2>
+          <ul>
+            <li><code>src/pages/ChildDashboard.tsx</code> và <code>src/assets/dashboard.css</code>: Calm Adventure dashboard.</li>
+            <li><code>src/components/SettingsView.tsx</code> và <code>src/assets/settings.css</code>: settings mới cho focus rhythm/gentle support.</li>
+            <li><code>src/components/FocusCameraPanel.tsx</code>: camera opt-in, trạng thái helper off, retry/stop rõ ràng.</li>
+            <li><code>src/pages/ChildReader.tsx</code> và <code>src/assets/reader.css</code>: popup pause nhẹ, âm cue nhỏ, dialog accessible.</li>
+            <li><code>src/utils/preferences.ts</code> và <code>src/utils/preferences.test.ts</code>: persistence + kiểm thử preferences.</li>
+            <li><code>implementation-notes.html</code>: ghi chú triển khai chi tiết theo yêu cầu.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section>
+        <h2>Kiểm chứng</h2>
+        <div class="checks">
+          <div class="check"><strong>Unit test</strong><span><code>vitest</code> preferences: 4 tests passed.</span></div>
+          <div class="check"><strong>Build</strong><span><code>npm run build</code>: pass. Có warning bundle lớn do MediaPipe.</span></div>
+          <div class="check"><strong>Browser inspect</strong><span>Đã mở dev server và chụp ảnh Dashboard/Settings từ UI thật.</span></div>
+        </div>
+      </section>
+
+      <section class="summary-box">
+        <h2>Kết luận</h2>
+        <p>
+          Sau cải tiến, phần UI dành cho trẻ đã gần hơn với một sản phẩm HCI cho trẻ ADHD: màn hình dịu hơn,
+          ít lựa chọn gây phân tán hơn, nhiệm vụ được chia thành một bước rõ ràng, camera tôn trọng quyền kiểm soát,
+          và feedback khi mất tập trung chuyển sang hướng hỗ trợ cảm xúc. Đây vẫn là prototype frontend, nhưng nền UI/UX
+          hiện phù hợp hơn nhiều để trình bày trong project Tương tác người máy.
+        </p>
+      </section>
+
+      <p class="footer">File báo cáo: <code>hci-redesign-report.html</code></p>
+    </main>
+  </body>
+</html>

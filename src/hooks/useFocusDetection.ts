@@ -29,6 +29,25 @@ const defaultOptions: FocusDetectionOptions = {
 
 type InternalCondition = "focused" | "looking_away" | "no_face" | "eyes_closed";
 
+type FaceLandmarkerResult = {
+  faceLandmarks?: unknown[];
+  facialTransformationMatrixes?: Array<{ data?: ArrayLike<number> }>;
+  faceBlendshapes?: Array<{
+    categories?: Array<{
+      categoryName?: string;
+      displayName?: string;
+      score: number;
+    }>;
+  }>;
+};
+
+type FaceLandmarkerInstance = {
+  detectForVideo: (
+    video: HTMLVideoElement,
+    timestampMs: number,
+  ) => FaceLandmarkerResult;
+};
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -98,8 +117,10 @@ export function useFocusDetection(partialOptions?: Partial<FocusDetectionOptions
   const rafRef = useRef<number | null>(null);
   const lastProcessMsRef = useRef<number>(0);
 
-  const faceLandmarkerRef = useRef<any>(null);
-  const visionResolverRef = useRef<any>(null);
+  const faceLandmarkerRef = useRef<FaceLandmarkerInstance | null>(null);
+  const visionResolverRef = useRef<Awaited<
+    ReturnType<typeof import("@mediapipe/tasks-vision").FilesetResolver.forVisionTasks>
+  > | null>(null);
 
   const [permission, setPermission] = useState<PermissionState>("unknown");
   const [error, setError] = useState<string | null>(null);
@@ -133,8 +154,7 @@ export function useFocusDetection(partialOptions?: Partial<FocusDetectionOptions
 
     if (videoRef.current) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (videoRef.current as any).srcObject = null;
+        videoRef.current.srcObject = null;
       } catch {
         // ignore
       }
@@ -175,8 +195,7 @@ export function useFocusDetection(partialOptions?: Partial<FocusDetectionOptions
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (video as any).srcObject = stream;
+      video.srcObject = stream;
       await video.play();
 
       // Lazy-load MediaPipe only when starting.
@@ -188,15 +207,18 @@ export function useFocusDetection(partialOptions?: Partial<FocusDetectionOptions
       }
 
       if (!faceLandmarkerRef.current) {
-        faceLandmarkerRef.current = await FaceLandmarker.createFromOptions(visionResolverRef.current, {
-          baseOptions: {
-            modelAssetPath: options.modelAssetUrl,
+        faceLandmarkerRef.current = (await FaceLandmarker.createFromOptions(
+          visionResolverRef.current,
+          {
+            baseOptions: {
+              modelAssetPath: options.modelAssetUrl,
+            },
+            runningMode: "VIDEO",
+            numFaces: 1,
+            outputFaceBlendshapes: true,
+            outputFacialTransformationMatrixes: true,
           },
-          runningMode: "VIDEO",
-          numFaces: 1,
-          outputFaceBlendshapes: true,
-          outputFacialTransformationMatrixes: true,
-        });
+        )) as FaceLandmarkerInstance;
       }
 
       // reset smoothing
