@@ -331,10 +331,11 @@ const hasInvalidOptionalId = (value) =>
 
 const parseBoolean = (value) => {
   if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
   if (typeof value === "string") {
     const normalized = value.trim().toLowerCase();
-    if (normalized === "true") return true;
-    if (normalized === "false") return false;
+    if (["true", "1", "yes", "y"].includes(normalized)) return true;
+    if (["false", "0", "no", "n", ""].includes(normalized)) return false;
   }
   return Boolean(value);
 };
@@ -347,6 +348,25 @@ const getFocusSessionById = async (id) => {
     limit: 1,
   });
   return normalizeFocusSession(rows[0] || null);
+};
+
+const getMissionFileById = async (id) => {
+  const rows = await supabaseTable("mission_files", {
+    filters: [{ column: "id", value: id }],
+    limit: 1,
+  });
+  return rows[0] || null;
+};
+
+const validateMissionFilePair = async (missionId, fileId) => {
+  if (!fileId) return null;
+
+  const file = await getMissionFileById(fileId);
+  if (!file) return { status: 404, error: "Mission file not found" };
+  if (missionId && Number(file.mission_id) !== missionId) {
+    return { status: 400, error: "file_id does not belong to mission_id" };
+  }
+  return null;
 };
 
 const toDateKey = (value) => {
@@ -839,6 +859,10 @@ app.post("/api/focus-sessions", async (req, res) => {
     const plannedMinutes = clampInt(req.body.planned_minutes, 1, 240, 15);
     const missionId = parseOptionalId(req.body.mission_id);
     const fileId = parseOptionalId(req.body.file_id);
+    const missionFileError = await validateMissionFilePair(missionId, fileId);
+    if (missionFileError) {
+      return res.status(missionFileError.status).json({ error: missionFileError.error });
+    }
 
     const rows = await supabaseTable("focus_sessions", {
       method: "POST",
@@ -864,6 +888,19 @@ app.patch("/api/focus-sessions/:id", async (req, res) => {
       return res.status(400).json({ error: "Valid session id is required" });
     }
 
+    const requesterUserId = parseOptionalId(req.body.user_id);
+    if (hasInvalidOptionalId(req.body.user_id)) {
+      return res.status(400).json({ error: "user_id must be a positive integer" });
+    }
+
+    const currentSession = await getFocusSessionById(sessionId);
+    if (!currentSession) {
+      return res.status(404).json({ error: "Focus session not found" });
+    }
+    if (requesterUserId && currentSession.user_id !== requesterUserId) {
+      return res.status(403).json({ error: "Focus session does not belong to user_id" });
+    }
+
     const body = {};
     if (Object.prototype.hasOwnProperty.call(req.body, "completed")) {
       body.completed = parseBoolean(req.body.completed);
@@ -885,10 +922,6 @@ app.patch("/api/focus-sessions/:id", async (req, res) => {
       body,
       returnRepresentation: true,
     });
-
-    if (!rows || !rows.length) {
-      return res.status(404).json({ error: "Focus session not found" });
-    }
 
     res.json(normalizeFocusSession(rows[0] || null));
   } catch (error) {
@@ -931,6 +964,17 @@ app.post("/api/distraction-events", async (req, res) => {
       if (session.user_id !== userId) {
         return res.status(400).json({ error: "Focus session does not belong to user_id" });
       }
+      if (missionId && session.mission_id !== missionId) {
+        return res.status(400).json({ error: "mission_id does not match focus session" });
+      }
+      if (fileId && session.file_id !== fileId) {
+        return res.status(400).json({ error: "file_id does not match focus session" });
+      }
+    }
+
+    const missionFileError = await validateMissionFilePair(missionId, fileId);
+    if (missionFileError) {
+      return res.status(missionFileError.status).json({ error: missionFileError.error });
     }
 
     const rows = await supabaseTable("distraction_events", {
@@ -990,7 +1034,7 @@ app.get("/api/focus-insights", async (req, res) => {
     }
 
     const childFilter = buildIdInFilter(childIds);
-    const [sessionRows, eventRows, recentSessionRows, recentEventRows] = await Promise.all([
+    const [sessionRows, eventRows] = await Promise.all([
       supabaseTable("focus_sessions", {
         filters: [{ column: "user_id", operator: "in", value: childFilter }],
         order: "started_at.desc",
@@ -998,32 +1042,20 @@ app.get("/api/focus-insights", async (req, res) => {
       supabaseTable("distraction_events", {
         filters: [{ column: "user_id", operator: "in", value: childFilter }],
         order: "created_at.desc",
-      }),
-      supabaseTable("focus_sessions", {
-        filters: [{ column: "user_id", operator: "in", value: childFilter }],
-        order: "started_at.desc",
-        limit: 5,
-      }),
-      supabaseTable("distraction_events", {
-        filters: [{ column: "user_id", operator: "in", value: childFilter }],
-        order: "created_at.desc",
-        limit: 5,
       }),
     ]);
 
     const sessions = (sessionRows || []).map(normalizeFocusSession);
     const events = (eventRows || []).map(normalizeDistractionEvent);
-    const recentSessions = (recentSessionRows || []).map(normalizeFocusSession);
-    const recentEvents = (recentEventRows || []).map(normalizeDistractionEvent);
 
     res.json({
       total_sessions: sessions.length,
       completed_sessions: sessions.filter((session) => session.completed).length,
       planned_minutes: sessions.reduce((sum, session) => sum + (session.planned_minutes || 0), 0),
       distraction_events: events.length,
-      recent_sessions: recentSessions,
+      recent_sessions: sessions.slice(0, 5),
       daily_pauses: buildDailyPauseBreakdown(events),
-      recent_events: recentEvents,
+      recent_events: events.slice(0, 5),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
