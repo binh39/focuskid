@@ -323,6 +323,12 @@ const parseOptionalId = (value) => {
   return parsePositiveId(value);
 };
 
+const hasInvalidOptionalId = (value) =>
+  value !== null &&
+  value !== undefined &&
+  value !== "" &&
+  parsePositiveId(value) === null;
+
 const parseBoolean = (value) => {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") {
@@ -823,6 +829,13 @@ app.post("/api/focus-sessions", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    if (hasInvalidOptionalId(req.body.mission_id)) {
+      return res.status(400).json({ error: "mission_id must be a positive integer" });
+    }
+    if (hasInvalidOptionalId(req.body.file_id)) {
+      return res.status(400).json({ error: "file_id must be a positive integer" });
+    }
+
     const plannedMinutes = clampInt(req.body.planned_minutes, 1, 240, 15);
     const missionId = parseOptionalId(req.body.mission_id);
     const fileId = parseOptionalId(req.body.file_id);
@@ -893,6 +906,16 @@ app.post("/api/distraction-events", async (req, res) => {
     const user = await getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    if (hasInvalidOptionalId(req.body.session_id)) {
+      return res.status(400).json({ error: "session_id must be a positive integer" });
+    }
+    if (hasInvalidOptionalId(req.body.mission_id)) {
+      return res.status(400).json({ error: "mission_id must be a positive integer" });
+    }
+    if (hasInvalidOptionalId(req.body.file_id)) {
+      return res.status(400).json({ error: "file_id must be a positive integer" });
     }
 
     const reason = String(req.body.reason || "attention_drift").slice(0, 120) || "attention_drift";
