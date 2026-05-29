@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,6 +10,7 @@ import {
   Leaf,
   Pause,
   Play,
+  Volume2,
 } from "lucide-react";
 import RankIcon from "../components/RankIcon";
 import FocusCameraPanel from "../components/FocusCameraPanel";
@@ -24,6 +25,7 @@ import {
   type RewardResult,
 } from "../utils/rewards";
 import { loadFocusPreferences } from "../utils/preferences";
+import { canSpeakText, speakText } from "../utils/speech";
 import "../assets/reader.css";
 
 const quizOptions = (quiz: MissionQuiz) => [
@@ -316,6 +318,21 @@ export default function ChildReader() {
     };
   }, [isRunning, timeLeft]);
 
+  const speechSupported = canSpeakText();
+
+  const readCurrentInstruction = () => {
+    if (selectedQuiz) {
+      speakText(`Quiz question. ${selectedQuiz.question}`);
+      return;
+    }
+
+    if (selectedFile) {
+      speakText(
+        "Reading mission. Start the timer when you are ready. If you need a short pause, that is okay.",
+      );
+    }
+  };
+
   useEffect(() => {
     if (
       !selectedFile ||
@@ -420,6 +437,15 @@ export default function ChildReader() {
                         <HelpCircle className="icon" />
                       )}
                       <h2>{selectedQuiz.question}</h2>
+                      <button
+                        type="button"
+                        className="quiz-read-aloud-btn"
+                        onClick={() => speakText(selectedQuiz.question)}
+                        disabled={!speechSupported}
+                        aria-label="Read quiz question aloud"
+                      >
+                        <Volume2 className="icon-xs" />
+                      </button>
                     </div>
                     <div className="main-quiz-options">
                       {quizOptions(selectedQuiz).map((option) => {
@@ -496,7 +522,20 @@ export default function ChildReader() {
               <FocusCameraPanel onDistractionChange={handleDistractionChange} />
 
               <div className="timer-card">
-                <h3>{selectedFile ? "File Timer" : "Quiz"}</h3>
+                <div className="timer-card-heading">
+                  <h3>{selectedFile ? "File Timer" : "Quiz"}</h3>
+                  <button
+                    type="button"
+                    className="read-aloud-btn"
+                    onClick={readCurrentInstruction}
+                    disabled={!speechSupported || (!selectedFile && !selectedQuiz)}
+                    aria-label="Read this step aloud"
+                    title={speechSupported ? "Read aloud" : "Read aloud is not supported in this browser"}
+                  >
+                    <Volume2 className="icon-xs" />
+                    Read aloud
+                  </button>
+                </div>
                 {selectedFile ? (
                   <>
                     {/* Thanh chạy ngược màu xanh lục (#22c55e) */}

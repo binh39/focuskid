@@ -1,4 +1,4 @@
-.reader-page {
+﻿.reader-page {
   min-height: 100vh;
 }
 
@@ -366,6 +366,49 @@
   text-align: center;
 }
 
+
+.timer-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.timer-card-heading h3 {
+  margin: 0;
+}
+
+.read-aloud-btn,
+.quiz-read-aloud-btn {
+  border: 1px solid rgba(106, 143, 140, 0.28);
+  border-radius: 999px;
+  background: #f2faf6;
+  color: #315f55;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.read-aloud-btn {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.quiz-read-aloud-btn {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+}
+
+.read-aloud-btn:disabled,
+.quiz-read-aloud-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 .focus-card {
   gap: 14px;
 }
