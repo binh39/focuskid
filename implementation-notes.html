@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>FocusKid Implementation Notes</title>
+</head>
+<body>
+  <h1>Implementation Notes</h1>
+
+  <h2>Decisions not specified in the original request</h2>
+  <ul>
+    <li>Ưu tiên phần code có giá trị demo HCI cao nhất trong Priority 2: analytics metadata, TTS bằng trình duyệt và badge nhẹ; tạm bỏ qua quản lý nhiều tài khoản con để giữ scope ổn định.</li>
+    <li>Thiết kế analytics theo hướng hỗ trợ phụ huynh hiểu quá trình học, không biến camera helper thành công cụ giám sát.</li>
+  </ul>
+
+  <h2>Things changed from the original plan or existing code</h2>
+  <ul>
+    <li>File ghi chú triển khai chưa tồn tại trong worktree hiện tại, nên tạo file này để lưu các ghi chú theo yêu cầu.</li>
+  </ul>
+
+  <h2>Tradeoffs</h2>
+  <ul>
+    <li>Chưa làm child selector/multi-child management trong giai đoạn này vì dễ mở rộng scope; parent insights vẫn dùng quan hệ parent-child hiện có ở backend.</li>
+    <li>Dùng browser SpeechSynthesis cho TTS để đáp ứng multimodal interaction mà không thêm backend hoặc dịch vụ ngoài.</li>
+  </ul>
+
+  <h2>Anything else to know</h2>
+  <ul>
+    <li>Schema SQL vẫn là nguồn tham chiếu cho Supabase sau khi SQL đã được chạy thủ công.</li>
+  </ul>
+
+  <h2>Change log by file/folder</h2>
+  <ul>
+    <li><code>Priority 2 analytics/TTS/badges</code>: hoàn thiện metadata-only distraction/session analytics, parent insight breakdown, read-aloud bằng SpeechSynthesis và badge nhẹ không tạo áp lực.</li>
+  </ul>
+</body>
+</html>
