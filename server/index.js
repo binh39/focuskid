@@ -390,7 +390,7 @@ const validateMissionFileAccess = async (user, missionId, fileId) => {
   if (missionOwnerId === undefined) {
     return { status: 404, error: "Mission not found" };
   }
-  if (missionOwnerId !== getUserMissionOwnerId(user)) {
+  if (missionOwnerId === null || missionOwnerId !== getUserMissionOwnerId(user)) {
     return { status: 403, error: "Mission does not belong to this family" };
   }
   return null;
@@ -915,7 +915,10 @@ app.patch("/api/focus-sessions/:id", async (req, res) => {
       return res.status(400).json({ error: "Valid session id is required" });
     }
 
-    const requesterUserId = parseOptionalId(req.body.user_id);
+    const requesterUserId = parsePositiveId(req.body.user_id);
+    if (!requesterUserId) {
+      return res.status(400).json({ error: "user_id is required" });
+    }
     if (hasInvalidOptionalId(req.body.user_id)) {
       return res.status(400).json({ error: "user_id must be a positive integer" });
     }
@@ -924,7 +927,7 @@ app.patch("/api/focus-sessions/:id", async (req, res) => {
     if (!currentSession) {
       return res.status(404).json({ error: "Focus session not found" });
     }
-    if (requesterUserId && currentSession.user_id !== requesterUserId) {
+    if (currentSession.user_id !== requesterUserId) {
       return res.status(403).json({ error: "Focus session does not belong to user_id" });
     }
 
@@ -949,6 +952,10 @@ app.patch("/api/focus-sessions/:id", async (req, res) => {
       body,
       returnRepresentation: true,
     });
+
+    if (!rows || !rows.length) {
+      return res.status(404).json({ error: "Focus session not found" });
+    }
 
     res.json(normalizeFocusSession(rows[0] || null));
   } catch (error) {
