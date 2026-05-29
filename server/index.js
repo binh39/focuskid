@@ -358,13 +358,40 @@ const getMissionFileById = async (id) => {
   return rows[0] || null;
 };
 
-const validateMissionFilePair = async (missionId, fileId) => {
-  if (!fileId) return null;
+const getMissionOwnerId = async (missionId) => {
+  if (!missionId) return null;
+  const rows = await supabaseTable("missions", {
+    filters: [{ column: "id", value: missionId }],
+    limit: 1,
+  });
+  const mission = rows[0] || null;
+  if (!mission) return undefined;
+  return mission.parent_id == null ? null : Number(mission.parent_id);
+};
 
-  const file = await getMissionFileById(fileId);
-  if (!file) return { status: 404, error: "Mission file not found" };
-  if (missionId && Number(file.mission_id) !== missionId) {
-    return { status: 400, error: "file_id does not belong to mission_id" };
+const getUserMissionOwnerId = (user) =>
+  user.role === "parent" ? Number(user.id) : user.parent_id == null ? null : Number(user.parent_id);
+
+const validateMissionFileAccess = async (user, missionId, fileId) => {
+  let resolvedMissionId = missionId;
+
+  if (fileId) {
+    const file = await getMissionFileById(fileId);
+    if (!file) return { status: 404, error: "Mission file not found" };
+    if (resolvedMissionId && Number(file.mission_id) !== resolvedMissionId) {
+      return { status: 400, error: "file_id does not belong to mission_id" };
+    }
+    resolvedMissionId = resolvedMissionId || Number(file.mission_id);
+  }
+
+  if (!resolvedMissionId) return null;
+
+  const missionOwnerId = await getMissionOwnerId(resolvedMissionId);
+  if (missionOwnerId === undefined) {
+    return { status: 404, error: "Mission not found" };
+  }
+  if (missionOwnerId !== getUserMissionOwnerId(user)) {
+    return { status: 403, error: "Mission does not belong to this family" };
   }
   return null;
 };
@@ -859,7 +886,7 @@ app.post("/api/focus-sessions", async (req, res) => {
     const plannedMinutes = clampInt(req.body.planned_minutes, 1, 240, 15);
     const missionId = parseOptionalId(req.body.mission_id);
     const fileId = parseOptionalId(req.body.file_id);
-    const missionFileError = await validateMissionFilePair(missionId, fileId);
+    const missionFileError = await validateMissionFileAccess(user, missionId, fileId);
     if (missionFileError) {
       return res.status(missionFileError.status).json({ error: missionFileError.error });
     }
@@ -972,7 +999,7 @@ app.post("/api/distraction-events", async (req, res) => {
       }
     }
 
-    const missionFileError = await validateMissionFilePair(missionId, fileId);
+    const missionFileError = await validateMissionFileAccess(user, missionId, fileId);
     if (missionFileError) {
       return res.status(missionFileError.status).json({ error: missionFileError.error });
     }
