@@ -544,6 +544,33 @@
 	line-height: 1;
 }
 
+.focus-insights-breakdown {
+	margin-top: 16px;
+}
+
+.focus-insights-breakdown .subtext {
+	margin-top: 6px;
+}
+
+.focus-session-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 0;
+	border-top: 1px solid #eef3f1;
+}
+
+.focus-session-row span {
+	color: #173f3a;
+	font-weight: 800;
+}
+
+.focus-session-row small {
+	color: #5d7771;
+	text-align: right;
+}
+
 .motivation-card {
 	background: linear-gradient(135deg, #f4ece3, #e8ddd2);
 	border-radius: 16px;

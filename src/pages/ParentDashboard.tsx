@@ -6,11 +6,19 @@ import {
   getMissionProgress,
   getMissionTimeLabel,
 } from "../utils/missionProgress";
+import { fetchFocusInsights, type FocusInsights } from "../utils/focusAnalytics";
 import "../assets/dashboard.css";
+
+const formatInsightDate = (date: string) => {
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
 
 export default function ParentDashboard() {
   const [showAssign, setShowAssign] = useState(false);
   const [missions, setMissions] = useState<Mission[]>([]);
+  const [focusInsights, setFocusInsights] = useState<FocusInsights | null>(null);
   const storedUser = localStorage.getItem("focuskid_user");
   const parsedUser = storedUser ? JSON.parse(storedUser) : null;
   const user_id = parsedUser.id;
@@ -20,7 +28,11 @@ export default function ParentDashboard() {
       .then((r) => r.json())
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
-  }, []);
+
+    fetchFocusInsights(user_id)
+      .then((data) => setFocusInsights(data))
+      .catch((e) => console.error(e));
+  }, [user_id]);
 
   const handleCreateMission = (mission: Mission) => {
     setMissions((prev) => [mission, ...prev]);
@@ -106,6 +118,66 @@ export default function ParentDashboard() {
           </section>
 
           <aside className="dashboard-side">
+            <div className="card stats-card focus-insights-recent">
+              <div className="stats-header">
+                <h3>Focus insights</h3>
+              </div>
+              <div>
+                <p className="stat-value">{focusInsights?.distraction_events ?? 0}</p>
+                <p className="stat-label">calm support pauses</p>
+              </div>
+              <div className="focus-insights-breakdown">
+                <h4>Recent sessions</h4>
+                {focusInsights?.recent_sessions?.length ? (
+                  focusInsights.recent_sessions.map((session) => (
+                    <div className="focus-session-row" key={session.id}>
+                      <span>{session.completed ? "Completed focus" : "Focus practice"}</span>
+                      <small>
+                        {session.started_at
+                          ? new Date(session.started_at).toLocaleString()
+                          : "Recently"}
+                      </small>
+                    </div>
+                  ))
+                ) : (
+                  <p className="subtext">No focus sessions recorded yet.</p>
+                )}
+              </div>
+              <div className="focus-insights-breakdown">
+                <h4>Soft pauses by day</h4>
+                {focusInsights?.daily_pauses?.length ? (
+                  focusInsights.daily_pauses.map((day) => (
+                    <div className="focus-session-row" key={day.date}>
+                      <span>{formatInsightDate(day.date)}</span>
+                      <small>{day.count} calm support pause{day.count === 1 ? "" : "s"}</small>
+                    </div>
+                  ))
+                ) : (
+                  <p className="subtext">No soft pauses recorded yet.</p>
+                )}
+              </div>
+              <div className="focus-insights-breakdown">
+                <h4>Recent support moments</h4>
+                {focusInsights?.recent_events?.length ? (
+                  focusInsights.recent_events.map((event) => {
+                    const createdAt =
+                      "created_at" in event && typeof event.created_at === "string"
+                        ? event.created_at
+                        : "";
+
+                    return (
+                      <div className="focus-session-row" key={event.id}>
+                        <span>{event.reason === "attention_drift" ? "Gentle focus cue" : event.reason}</span>
+                        <small>{createdAt ? new Date(createdAt).toLocaleString() : "Just now"}</small>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="subtext">No support moments yet.</p>
+                )}
+              </div>
+            </div>
+
             <div className="motivation-card">
               <div className="emoji">OK</div>
               <h3>Keep Going!</h3>
