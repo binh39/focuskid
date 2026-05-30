@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
@@ -63,6 +63,56 @@
         <li><code>src/assets/reader.css</code>: thêm style cho pause dialog và camera consent.</li>
         <li><code>package.json/package-lock.json</code>: thêm Vitest làm dev dependency để kiểm thử frontend utility.</li>
         <li><code>Priority 2 analytics/TTS/badges</code>: hoàn thiện metadata-only distraction/session analytics, parent insight breakdown, read-aloud bằng SpeechSynthesis và badge nhẹ không tạo áp lực.</li>
+        <li>Task 8 hiển thị badge ở Reward/Rank pages để giữ cùng một hệ badge trên toàn app.</li>
+        <li>Badge derivation vẫn dựa trên XP để tránh thêm trạng thái phạt hay streak loss.</li>
+        <li>Task 9 final verification sẽ chỉ gom test/build và chốt notes; không đổi luồng UX cốt lõi nữa.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Task 4 speech utility notes</h2>
+      <ul>
+        <li><strong>Decision:</strong> kept the SpeechSynthesis helper browser-only and dependency-free so it can support multimodal read-aloud without backend or third-party services.</li>
+        <li><strong>Change from plan/code:</strong> added a small utility API that returns <code>false</code> for unsupported or empty text so UI callers can fallback safely.</li>
+        <li><strong>Tradeoff:</strong> uses the browser default voice instead of voice selection to keep scope minimal and predictable for Task 4.</li>
+        <li><strong>Change log:</strong> <code>src/utils/speech.ts</code> adds <code>canSpeakText</code>, <code>cancelSpeech</code>, and <code>speakText</code>; <code>src/utils/speech.test.ts</code> covers unsupported browsers, speak flow, and safe cancel.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Task 5 reader read-aloud controls</h2>
+      <ul>
+        <li><strong>Decision:</strong> added read-aloud entry points in both the timer card and quiz heading so children can hear the current step without searching the page.</li>
+        <li><strong>Change from plan/code:</strong> reused the existing SpeechSynthesis helper from Task 4 and disabled controls when speech is unsupported or no file/quiz is active.</li>
+        <li><strong>Tradeoff:</strong> the file read-aloud uses short mission guidance instead of attempting to read PDF/iframe content, keeping scope safe and browser-compatible.</li>
+        <li><strong>Change log:</strong> <code>src/pages/ChildReader.tsx</code> adds read-aloud buttons and handlers; <code>src/assets/reader.css</code> adds compact pill button styles for timer and quiz controls.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Task 6 parent analytics display</h2>
+      <ul>
+        <li><strong>Decision:</strong> placed focus insights in the existing parent sidebar so mission assignment remains the main page task while analytics stay visible.</li>
+        <li><strong>Change from plan/code:</strong> the current parent dashboard did not yet render a focus insights card, so Task 6 added the fetch/display integration before adding the requested daily pauses and recent support moments breakdowns.</li>
+        <li><strong>Tradeoff:</strong> kept summaries compact and supportive instead of adding charts, preserving the low-pressure HCI direction for ADHD support.</li>
+        <li><strong>Change log:</strong> <code>src/pages/ParentDashboard.tsx</code> now fetches focus insights, formats daily pause dates, and renders recent sessions, daily pauses, and support moments; <code>src/assets/dashboard.css</code> adds spacing and row styles for the insight breakdowns.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Task 7 reward badges</h2>
+      <ul>
+        <li><strong>Decision:</strong> keep badge derivation purely XP-based so the UI can celebrate progress without tracking streak failures or other punitive signals.</li>
+        <li><strong>Change from plan/code:</strong> <code>rewards.ts</code> had rank helpers but no badge model, so Task 7 adds a lightweight badge catalog and a derived getter for earned badges.</li>
+        <li><strong>Tradeoff:</strong> the badge set is intentionally small and deterministic; it covers the requested motivation moments without adding backend state or extra profile fields.</li>
+        <li><strong>Change log:</strong> <code>src/utils/rewards.ts</code> adds <code>RewardBadge</code>, <code>REWARD_BADGES</code>, and <code>getEarnedBadges</code>; <code>src/utils/rewards.test.ts</code> verifies the starter badge always appears and higher XP unlocks calm-reader and quiz-star without any lost-streak badge.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Task 8 reward and rank badges</h2>
+      <ul>
+        <li><strong>Decision:</strong> rendered the same earned badge set on both Reward and Rank pages so children see one consistent celebration model wherever they check progress.</li>
+        <li><strong>Change from plan/code:</strong> reused the existing XP-based badge helper from Task 7 instead of introducing a second badge source or extra badge state.</li>
+        <li><strong>Tradeoff:</strong> kept the badge cards informational only, with no interactive controls, to avoid turning reward screens into another task list.</li>
+        <li><strong>Change log:</strong> <code>src/pages/reward.tsx</code> and <code>src/pages/ChildRanks.tsx</code> now import badge icons and render earned badges; <code>src/assets/reward.css</code> and <code>src/assets/ranks.css</code> add responsive badge panels and card styles.</li>
       </ul>
     </section>
   </body>
