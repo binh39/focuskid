@@ -76,6 +76,7 @@ create index if not exists idx_mission_files_mission_id on public.mission_files 
 create index if not exists idx_mission_quizzes_mission_id on public.mission_quizzes (mission_id);
 create index if not exists idx_reward_events_user_id on public.reward_events (user_id);
 create index if not exists idx_missions_created_at on public.missions (created_at desc);
+create index if not exists idx_distraction_events_created_at on public.distraction_events (created_at desc);
 
 insert into storage.buckets (id, name, public)
 values ('mission-files', 'mission-files', true)
