@@ -115,5 +115,15 @@
         <li><strong>Change log:</strong> <code>src/pages/reward.tsx</code> and <code>src/pages/ChildRanks.tsx</code> now import badge icons and render earned badges; <code>src/assets/reward.css</code> and <code>src/assets/ranks.css</code> add responsive badge panels and card styles.</li>
       </ul>
     </section>
+
+    <section>
+      <h2>Default mission templates</h2>
+      <ul>
+        <li><strong>Decision:</strong> implemented templates as frontend-only editable presets so parents can review and adjust quiz content before creating a mission.</li>
+        <li><strong>Change from plan/code:</strong> kept file uploads manual; templates only prefill the title and quiz builder because files are child/class-specific.</li>
+        <li><strong>Tradeoff:</strong> static templates are fast and reliable for demo use, but they require code changes to add more templates later.</li>
+        <li><strong>Change log:</strong> <code>src/utils/missionTemplates.ts</code> adds the default template catalog; <code>src/components/AssignMission.tsx</code> adds the chooser and apply behavior; <code>src/assets/dashboard.css</code> styles the template cards.</li>
+      </ul>
+    </section>
   </body>
 </html>

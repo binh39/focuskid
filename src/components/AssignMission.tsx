@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Mission, QuizOption } from "../types";
+import { DEFAULT_MISSION_TEMPLATES, getTemplateQuizDrafts, type MissionTemplate } from "../utils/missionTemplates";
 
 type Props = {
   onClose: () => void;
@@ -43,6 +44,13 @@ export default function AssignMission({ onClose, onCreate }: Props) {
   const [quizzes, setQuizzes] = useState<QuizDraft[]>([createEmptyQuiz()]);
   const [fileDrafts, setFileDrafts] = useState<FileDraft[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
+
+  const applyTemplate = (template: MissionTemplate) => {
+    setSelectedTemplateKey(template.key);
+    setTitle(template.title);
+    setQuizzes(getTemplateQuizDrafts(template));
+  };
 
   const updateQuiz = (index: number, field: QuizField, value: string) => {
     setQuizzes((prev) =>
@@ -109,10 +117,38 @@ export default function AssignMission({ onClose, onCreate }: Props) {
       <div className="modal-card">
         <header className="modal-header">
           <h3>Assign New Mission</h3>
-          <button type="button" className="close" onClick={onClose}>x</button>
+          <button type="button" className="close" onClick={onClose}>
+            x
+          </button>
         </header>
 
         <form onSubmit={handleSubmit} className="modal-form">
+          <section className="mission-template-picker" aria-labelledby="mission-template-title">
+            <div className="mission-template-heading">
+              <div>
+                <h4 id="mission-template-title">Chọn đề mẫu</h4>
+                <p>Chọn nhanh một nhiệm vụ có quiz sẵn, rồi chỉnh sửa trước khi tạo.</p>
+              </div>
+              <span>{DEFAULT_MISSION_TEMPLATES.length} mẫu</span>
+            </div>
+            <div className="mission-template-grid">
+              {DEFAULT_MISSION_TEMPLATES.map((template) => (
+                <button
+                  type="button"
+                  className={`mission-template-card${selectedTemplateKey === template.key ? " selected" : ""}`}
+                  key={template.key}
+                  onClick={() => applyTemplate(template)}
+                  style={{ borderColor: selectedTemplateKey === template.key ? template.accent : undefined }}
+                >
+                  <span className="mission-template-dot" style={{ backgroundColor: template.accent }} />
+                  <strong>{template.title}</strong>
+                  <small>{template.minutesLabel}</small>
+                  <p>{template.description}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+
           <label>
             Title
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Math Practice" />
@@ -120,11 +156,7 @@ export default function AssignMission({ onClose, onCreate }: Props) {
 
           <label>
             Attach reading files
-            <input
-              type="file"
-              multiple
-              onChange={(e) => handleFileSelection(e.target.files)}
-            />
+            <input type="file" multiple onChange={(e) => handleFileSelection(e.target.files)} />
           </label>
 
           {fileDrafts.length > 0 && (
@@ -150,14 +182,18 @@ export default function AssignMission({ onClose, onCreate }: Props) {
           <div className="quiz-builder">
             <div className="quiz-builder-head">
               <strong>Quiz</strong>
-              <button type="button" className="text-action-btn" onClick={addQuiz}>Add Quiz</button>
+              <button type="button" className="text-action-btn" onClick={addQuiz}>
+                Add Quiz
+              </button>
             </div>
 
             {quizzes.map((quiz, index) => (
               <div className="quiz-editor" key={index}>
                 <div className="quiz-editor-title">
                   <span>Question {index + 1}</span>
-                  <button type="button" className="text-action-btn danger" onClick={() => removeQuiz(index)}>Remove</button>
+                  <button type="button" className="text-action-btn danger" onClick={() => removeQuiz(index)}>
+                    Remove
+                  </button>
                 </div>
                 <label>
                   Question
@@ -199,8 +235,12 @@ export default function AssignMission({ onClose, onCreate }: Props) {
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn primary" disabled={loading}>{loading ? "Creating..." : "Create"}</button>
+            <button type="button" className="btn secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn primary" disabled={loading}>
+              {loading ? "Creating..." : "Create"}
+            </button>
           </div>
         </form>
       </div>

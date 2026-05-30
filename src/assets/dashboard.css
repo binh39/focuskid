@@ -649,6 +649,105 @@
 	.stat-value {
 		font-size: 26px;
 	}
+
+	.mission-template-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.mission-template-picker {
+	display: grid;
+	gap: 10px;
+	border: 1px solid #dce9e6;
+	border-radius: 14px;
+	background: #f6fbf9;
+	padding: 12px;
+}
+
+.mission-template-heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.mission-template-heading h4 {
+	margin: 0;
+	color: #173f3a;
+	font-size: 16px;
+}
+
+.mission-template-heading p {
+	margin: 4px 0 0;
+	color: #5d7771;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.mission-template-heading span {
+	border-radius: 999px;
+	background: #ffffff;
+	color: #315f55;
+	font-size: 12px;
+	font-weight: 900;
+	padding: 5px 8px;
+	white-space: nowrap;
+}
+
+.mission-template-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.mission-template-card {
+	position: relative;
+	display: grid;
+	gap: 5px;
+	min-height: 120px;
+	border: 2px solid transparent;
+	border-radius: 14px;
+	background: #ffffff;
+	color: #173f3a;
+	text-align: left;
+	padding: 12px;
+	cursor: pointer;
+	box-shadow: 0 8px 16px rgba(47, 111, 104, 0.08);
+	transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mission-template-card:hover,
+.mission-template-card:focus-visible {
+	transform: translateY(-1px);
+	box-shadow: 0 12px 22px rgba(47, 111, 104, 0.14);
+	outline: none;
+}
+
+.mission-template-card.selected {
+	background: #fbfdfc;
+}
+
+.mission-template-dot {
+	width: 20px;
+	height: 6px;
+	border-radius: 999px;
+}
+
+.mission-template-card strong {
+	font-size: 14px;
+}
+
+.mission-template-card small {
+	color: #4f8178;
+	font-size: 12px;
+	font-weight: 900;
+}
+
+.mission-template-card p {
+	margin: 0;
+	color: #5d7771;
+	font-size: 12px;
+	line-height: 1.35;
 }
 
 @keyframes grow-progress {
