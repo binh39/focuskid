@@ -17,6 +17,45 @@ export type RewardResult = {
   user?: User;
 };
 
+export type RewardBadge = {
+  key: string;
+  name: string;
+  description: string;
+  minXp: number;
+  icon: "sparkles" | "leaf" | "star" | "trophy";
+};
+
+export const REWARD_BADGES: RewardBadge[] = [
+  {
+    key: "focus-starter",
+    name: "Focus Starter",
+    description: "You began your learning journey.",
+    minXp: 0,
+    icon: "sparkles",
+  },
+  {
+    key: "calm-reader",
+    name: "Calm Reader",
+    description: "You completed reading steps with calm focus support.",
+    minXp: 120,
+    icon: "leaf",
+  },
+  {
+    key: "quiz-star",
+    name: "Quiz Star",
+    description: "You kept trying and answered learning questions.",
+    minXp: 250,
+    icon: "star",
+  },
+  {
+    key: "mission-hero",
+    name: "Mission Hero",
+    description: "You built a strong learning rhythm.",
+    minXp: 600,
+    icon: "trophy",
+  },
+];
+
 export const RANKS: RewardRank[] = [
   { name: "Bronze", minXp: 0, color: "#9a6a43", icon: "shield" },
   { name: "Silver", minXp: 250, color: "#7f8a96", icon: "medal" },
@@ -43,6 +82,12 @@ export function getRewardProfile(xp = 0) {
     xpToNextRank: nextRank ? Math.max(0, nextRank.minXp - currentXp) : 0,
   };
 }
+
+export function getEarnedBadges(xp = 0) {
+  const currentXp = Math.max(0, xp || 0);
+  return REWARD_BADGES.filter((badge) => currentXp >= badge.minXp);
+}
+
 
 export function getStoredUser(): User | null {
   const stored = localStorage.getItem("focuskid_user");
