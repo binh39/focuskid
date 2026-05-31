@@ -15,9 +15,9 @@ export interface FocusDetectionOptions {
   modelAssetUrl: string;
 }
 
-const defaultOptions: FocusDetectionOptions = {
+export const DEFAULT_FOCUS_DETECTION_OPTIONS: FocusDetectionOptions = {
   fps: 12,
-  distractionSeconds: 10,
+  distractionSeconds: 3,
   stabilityMs: 800,
   yawThresholdRad: 0.42, // ~24 degrees
   pitchThresholdRad: 0.42, // ~24 degrees
@@ -109,7 +109,7 @@ function scoreFromSignals(args: {
 }
 
 export function useFocusDetection(partialOptions?: Partial<FocusDetectionOptions>) {
-  const options = useMemo(() => ({ ...defaultOptions, ...(partialOptions || {}) }), [partialOptions]);
+  const options = useMemo(() => ({ ...DEFAULT_FOCUS_DETECTION_OPTIONS, ...(partialOptions || {}) }), [partialOptions]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
