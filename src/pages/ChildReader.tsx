@@ -26,6 +26,7 @@ import {
 } from "../utils/rewards";
 import { loadFocusPreferences } from "../utils/preferences";
 import { canSpeakText, speakText } from "../utils/speech";
+import { logDistractionEvent } from "../utils/focusAnalytics";
 import "../assets/reader.css";
 
 const quizOptions = (quiz: MissionQuiz) => [
@@ -140,21 +141,45 @@ export default function ChildReader() {
 
   const handleDistractionChange = useCallback((isDistracted: boolean) => {
     const preferences = loadFocusPreferences();
-    if (!preferences.notificationsEnabled) {
+
+    if (!isDistracted) {
       setIsDistractedState(false);
+      setShowDistractionPopup(false);
       return;
     }
 
     setIsDistractedState((prev) => {
-      if (!prev && isDistracted) {
+      if (prev) return true;
+
+      const storedUser = getStoredUser();
+      if (storedUser?.id) {
+        void logDistractionEvent({
+          user_id: storedUser.id,
+          mission_id: mission?.id,
+          file_id: selectedFile?.id,
+          reason: "attention_drift",
+        })
+          .then((event) => {
+            if (!event) return;
+            localStorage.setItem(
+              "focuskid_focus_insights_updated",
+              `${Date.now()}`,
+            );
+            window.dispatchEvent(new Event("focuskid_focus_insights_updated"));
+          })
+          .catch((error) => console.error(error));
+      }
+
+      if (preferences.notificationsEnabled) {
         setShowDistractionPopup(true);
         setWasRunningBeforePause(isRunning);
         setIsRunning(false);
         if (preferences.soundEnabled) playSoftCue();
       }
-      return isDistracted;
+
+      return true;
     });
-  }, [isRunning]);
+  }, [isRunning, mission?.id, selectedFile?.id]);
 
   useEffect(() => {
     if (showDistractionPopup) {
@@ -253,12 +278,13 @@ export default function ChildReader() {
         );
         setIsRunning(false);
         setTimeLeft(0);
+        window.dispatchEvent(new Event("focuskid_missions_updated"));
 
         if (shouldAwardXp) {
           const reward = await awardXp(
             30,
             "Completed file timer",
-            `timer:file:${file.id}`,
+            `file:${file.id}`,
           );
           showRewardNotice(reward);
         }
@@ -292,6 +318,9 @@ export default function ChildReader() {
         prev.map((item) => (item.id === quiz.id ? json.quiz : item)),
       );
       setSelectedQuiz(json.quiz);
+      if (json.quiz.completed) {
+        window.dispatchEvent(new Event("focuskid_missions_updated"));
+      }
       applyRewardResult(json.reward);
       showRewardNotice(json.reward);
     } catch (e) {
@@ -369,8 +398,14 @@ export default function ChildReader() {
               className="timer-btn calm-resume-btn"
               onClick={() => {
                 setShowDistractionPopup(false);
-                if (!isDistractedState) {
-                  setIsRunning(wasRunningBeforePause);
+                if (
+                  !isDistractedState &&
+                  wasRunningBeforePause &&
+                  selectedFile &&
+                  !isFileCompleted(selectedFile) &&
+                  timeLeft > 0
+                ) {
+                  setIsRunning(true);
                 }
               }}
             >

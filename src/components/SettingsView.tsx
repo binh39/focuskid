@@ -125,7 +125,7 @@ export default function SettingsView() {
                       <p>Use quiet cues instead of loud alerts.</p>
                     </div>
                   </div>
-                  <div className={preferences.soundEnabled ? "switch on" : "switch"}>
+                  <div className={preferences.soundEnabled ? "switch active" : "switch"}>
                     <span />
                   </div>
                 </button>
@@ -146,7 +146,7 @@ export default function SettingsView() {
                       <p>Show short prompts when attention drifts.</p>
                     </div>
                   </div>
-                  <div className={preferences.notificationsEnabled ? "switch on" : "switch"}>
+                  <div className={preferences.notificationsEnabled ? "switch active" : "switch"}>
                     <span />
                   </div>
                 </button>
@@ -167,7 +167,7 @@ export default function SettingsView() {
                       <p>Ask before using camera and keep video local.</p>
                     </div>
                   </div>
-                  <div className={preferences.focusHelperEnabled ? "switch on" : "switch"}>
+                  <div className={preferences.focusHelperEnabled ? "switch active" : "switch"}>
                     <span />
                   </div>
                 </button>

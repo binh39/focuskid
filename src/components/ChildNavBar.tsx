@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Target, Settings, Sparkles, LogOut, Trophy } from "lucide-react";
 import RankIcon from "./RankIcon";
 import type { User } from "../types";
-import { fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
+import { clearStoredUser, fetchCurrentUser, getRewardProfile, getStoredUser } from "../utils/rewards";
 import "../assets/navbar.css";
 
 export default function ChildNavBar() {
@@ -70,7 +70,7 @@ export default function ChildNavBar() {
             type="button"
             className="fk-logout"
             onClick={() => {
-              localStorage.removeItem("focuskid_user");
+              clearStoredUser();
               navigate("/");
             }}
           >

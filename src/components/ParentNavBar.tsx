@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Target, TrendingUp, Settings, Sparkles, LogOut } from "lucide-react";
-import type { User } from "../types";
+import { clearStoredUser, getStoredUser } from "../utils/rewards";
 import "../assets/navbar.css";
 
 export default function ParentNavBar() {
@@ -14,8 +14,7 @@ export default function ParentNavBar() {
     { path: "/parent/settings", icon: Settings, label: "Settings" },
   ];
 
-  const stored = localStorage.getItem("focuskid_user");
-  const user = stored ? (JSON.parse(stored) as User) : null;
+  const user = getStoredUser();
 
   return (
     <nav className="fk-nav">
@@ -53,7 +52,7 @@ export default function ParentNavBar() {
             type="button"
             className="fk-logout"
             onClick={() => {
-              localStorage.removeItem("focuskid_user");
+              clearStoredUser();
               navigate("/");
             }}
           >

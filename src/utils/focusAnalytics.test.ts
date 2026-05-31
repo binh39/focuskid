@@ -67,6 +67,8 @@ describe("focusAnalytics", () => {
     const event = await logDistractionEvent({
       user_id: 9,
       session_id: 2,
+      mission_id: 7,
+      file_id: 4,
       reason: "attention_drift",
       metadata: { source: "camera" },
     });
@@ -77,6 +79,8 @@ describe("focusAnalytics", () => {
       body: JSON.stringify({
         user_id: 9,
         session_id: 2,
+        mission_id: 7,
+        file_id: 4,
         reason: "attention_drift",
         metadata: { source: "camera" },
       }),

@@ -27,12 +27,11 @@ export default function ProgressView({ audience }: ProgressViewProps) {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [user, setUser] = useState<User | null>(() => getStoredUser());
   const showRank = audience === "child";
-  const storedUser = localStorage.getItem("focuskid_user");
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user_id = parsedUser.id;
 
   useEffect(() => {
-    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
+    if (!user?.id) return;
+
+    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
       .then((r) => r.json())
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
@@ -42,7 +41,7 @@ export default function ProgressView({ audience }: ProgressViewProps) {
         .then((latestUser) => setUser(latestUser))
         .catch((e) => console.error(e));
     }
-  }, [showRank]);
+  }, [showRank, user?.id]);
 
   const missionStats = useMemo(
     () =>

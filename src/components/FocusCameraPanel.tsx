@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, CameraOff, HeartHandshake } from "lucide-react";
 import { useFocusDetection } from "../hooks/useFocusDetection";
 import { loadFocusPreferences } from "../utils/preferences";
@@ -24,6 +24,14 @@ export default function FocusCameraPanel({
     () => loadFocusPreferences().focusHelperEnabled,
   );
   const [helperRequested, setHelperRequested] = useState(false);
+  const requestTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+
+  const clearRequestTimeout = () => {
+    if (requestTimeoutRef.current) {
+      window.clearTimeout(requestTimeoutRef.current);
+      requestTimeoutRef.current = null;
+    }
+  };
 
   useEffect(() => {
     const syncPreferences = () => {
@@ -47,12 +55,25 @@ export default function FocusCameraPanel({
     }
   }, [helperEnabled, reminder, onDistractionChange]);
 
+  useEffect(() => {
+    if (isRunning || error || permission === "denied") {
+      clearRequestTimeout();
+    }
+  }, [error, isRunning, permission]);
+
+  useEffect(() => () => clearRequestTimeout(), []);
+
   const startHelper = () => {
     setHelperRequested(true);
+    clearRequestTimeout();
+    requestTimeoutRef.current = window.setTimeout(() => {
+      setHelperRequested(false);
+    }, 8000);
     start().catch(() => setHelperRequested(false));
   };
 
   const stopHelper = () => {
+    clearRequestTimeout();
     setHelperRequested(false);
     stop();
     onDistractionChange?.(false);
@@ -93,7 +114,8 @@ export default function FocusCameraPanel({
           <h4>Want a gentle focus helper?</h4>
           <p>
             Camera stays local and only helps pause the timer when attention
-            drifts. Start it only if it feels okay.
+            drifts. If the browser does not show a permission prompt, try
+            reloading the page or checking camera permissions.
           </p>
           <button type="button" className="focus-btn" onClick={startHelper}>
             <Camera className="icon-xs" /> Start helper
@@ -108,7 +130,8 @@ export default function FocusCameraPanel({
             <video ref={videoRef} className="focus-video" playsInline muted />
             {!isRunning && (
               <div className="focus-overlay">
-                Getting the helper ready...
+                Getting the helper ready... If this stays here, allow camera
+                permission or try again.
               </div>
             )}
           </div>

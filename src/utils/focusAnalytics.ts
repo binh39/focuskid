@@ -48,6 +48,8 @@ type EndFocusSessionArgs = {
 type LogDistractionEventArgs = {
   user_id: number;
   session_id?: number | null;
+  mission_id?: number | null;
+  file_id?: number | null;
   reason: string;
   metadata?: Record<string, unknown> | null;
 };

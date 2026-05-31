@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import NavBar from "../components/NavBar";
 import type { Mission } from "../types";
+import { getStoredUser } from "../utils/rewards";
 import "../assets/mission.css";
 
 export default function Mission() {
@@ -19,18 +20,17 @@ export default function Mission() {
   const [missions, setMissions] = useState<(Mission & { expanded: boolean })[]>(
     [],
   );
-  const storedUser = localStorage.getItem("focuskid_user");
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user_id = parsedUser.id;
+  const user = getStoredUser();
 
   useEffect(() => {
-    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
+    if (!user?.id) return;
+    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
       .then((r) => r.json())
       .then((data: Mission[]) =>
         setMissions(data.map((m) => ({ ...m, expanded: false }))),
       )
       .catch((e) => console.error(e));
-  }, []);
+  }, [user?.id]);
 
   const toggleMission = (id: number) => {
     setMissions((prev) =>
@@ -209,7 +209,7 @@ export default function Mission() {
                             backgroundColor: mission.color || "#8FB8A8",
                           }}
                           onClick={() =>
-                            navigate("/focus", { state: { mission } })
+                            navigate("/child/focus", { state: { mission } })
                           }
                         >
                           <Play className="icon-xs" />
