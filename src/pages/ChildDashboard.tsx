@@ -15,11 +15,12 @@ import {
   getStoredUser,
 } from "../utils/rewards";
 import { loadFocusPreferences } from "../utils/preferences";
+import { loadCachedMissions, saveCachedMissions } from "../utils/missionCache";
 import "../assets/dashboard.css";
 
 export default function ChildDashboard() {
   const navigate = useNavigate();
-  const [missions, setMissions] = useState<Mission[]>([]);
+  const [missions, setMissions] = useState<Mission[]>(() => loadCachedMissions(getStoredUser()?.id));
   const [user, setUser] = useState<User | null>(() => getStoredUser());
   const preferences = loadFocusPreferences();
 
@@ -33,14 +34,36 @@ export default function ChildDashboard() {
       return;
     }
 
-    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
-      .then((r) => r.json())
-      .then((data) => setMissions(data))
-      .catch((e) => console.error(e));
+    const syncMissions = () => {
+      const latestUser = getStoredUser();
+      if (!latestUser?.id || latestUser.role !== "child") return;
+      fetch(`http://localhost:4000/api/missions?user_id=${latestUser.id}`)
+        .then((r) => r.json())
+        .then((data: Mission[]) => {
+          saveCachedMissions(latestUser.id, data);
+          setMissions(data);
+        })
+        .catch((e) => console.error(e));
+    };
+
+    const handleMissionUpdates = () => {
+      const latestUser = getStoredUser();
+      if (!latestUser?.id || latestUser.role !== "child") return;
+      syncMissions();
+    };
+
+    syncMissions();
 
     fetchCurrentUser()
       .then((latestUser) => setUser(latestUser))
       .catch((e) => console.error(e));
+
+    window.addEventListener("storage", handleMissionUpdates);
+    window.addEventListener("focuskid_missions_updated", handleMissionUpdates);
+    return () => {
+      window.removeEventListener("storage", handleMissionUpdates);
+      window.removeEventListener("focuskid_missions_updated", handleMissionUpdates);
+    };
   }, [navigate, user]);
 
   const rewardProfile = getRewardProfile(user?.xp || 0);
@@ -169,7 +192,7 @@ export default function ChildDashboard() {
           <section className="calm-mini-list" aria-label="Other missions">
             <div className="title-row">
               <h2>Other calm choices</h2>
-              <button type="button" className="link-btn" onClick={() => navigate("/child/missions")}>
+              <button type="button" className="link-btn" onClick={() => navigate("/child/missions") }>
                 View all
               </button>
             </div>

@@ -38,36 +38,11 @@ describe("speech utility", () => {
     expect(detectSpeechLanguage("Take a calm breath and look back at the lesson.")).toBe("en-US");
   });
 
-  it("speaks Vietnamese text with a Vietnamese voice when available", () => {
+  it("defaults to English speech when reading aloud", async () => {
     const speak = vi.fn();
     const cancel = vi.fn();
-    const vietnameseVoice = createVoice("Microsoft An", "vi-VN");
     const englishVoice = createVoice("Microsoft Jenny", "en-US");
-
-    vi.stubGlobal("window", {
-      speechSynthesis: { speak, cancel, getVoices: () => [englishVoice, vietnameseVoice] },
-      SpeechSynthesisUtterance: FakeUtterance,
-    });
-    vi.stubGlobal("speechSynthesis", { speak, cancel, getVoices: () => [englishVoice, vietnameseVoice] });
-    vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
-
-    expect(speakText("Con hãy nhìn lại bài học nhé.")).toBe(true);
-    expect(cancel).toHaveBeenCalledOnce();
-    expect(speak).toHaveBeenCalledOnce();
-    expect(speak.mock.calls[0][0]).toMatchObject({
-      text: "Con hãy nhìn lại bài học nhé.",
-      lang: "vi-VN",
-      rate: 0.9,
-      pitch: 1,
-      voice: vietnameseVoice,
-    });
-  });
-
-  it("speaks English text with an English voice when available", () => {
-    const speak = vi.fn();
-    const cancel = vi.fn();
     const vietnameseVoice = createVoice("Microsoft An", "vi-VN");
-    const englishVoice = createVoice("Microsoft Jenny", "en-US");
 
     vi.stubGlobal("window", {
       speechSynthesis: { speak, cancel, getVoices: () => [vietnameseVoice, englishVoice] },
@@ -75,15 +50,66 @@ describe("speech utility", () => {
     });
     vi.stubGlobal("speechSynthesis", { speak, cancel, getVoices: () => [vietnameseVoice, englishVoice] });
     vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
 
-    expect(speakText("Take a calm breath")).toBe(true);
+    await expect(speakText("Câu hỏi trắc nghiệm. Con hãy chọn đáp án đúng.")).resolves.toBe(true);
+
     expect(speak.mock.calls[0][0]).toMatchObject({
-      text: "Take a calm breath",
+      text: "Câu hỏi trắc nghiệm. Con hãy chọn đáp án đúng.",
       lang: "en-US",
       rate: 0.92,
       pitch: 1,
       voice: englishVoice,
     });
+  });
+
+  it("plays ElevenLabs audio before falling back to browser speech", async () => {
+    const play = vi.fn(() => Promise.resolve());
+    const addEventListener = vi.fn();
+    const fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        blob: () => Promise.resolve(new Blob(["audio"], { type: "audio/mpeg" })),
+      }),
+    );
+    const createObjectURL = vi.fn(() => "blob:tts");
+    const revokeObjectURL = vi.fn();
+    const Audio = vi.fn(function Audio() {
+      return { addEventListener, currentTime: 0, pause: vi.fn(), play };
+    });
+
+    vi.stubGlobal("fetch", fetch);
+    vi.stubGlobal("Audio", Audio);
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.stubGlobal("window", {
+      speechSynthesis: { speak: vi.fn(), cancel: vi.fn(), getVoices: () => [] },
+      SpeechSynthesisUtterance: FakeUtterance,
+    });
+    vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+
+    await expect(speakText("Con hãy đọc tiếp nhé.")).resolves.toBe(true);
+
+    expect(fetch).toHaveBeenCalledWith("http://localhost:4000/api/tts", expect.objectContaining({ method: "POST" }));
+    expect(Audio).toHaveBeenCalledWith("blob:tts");
+    expect(play).toHaveBeenCalledOnce();
+    expect(revokeObjectURL).not.toHaveBeenCalledWith("blob:tts");
+  });
+
+  it("falls back to browser speech when ElevenLabs audio is unavailable", async () => {
+    const speak = vi.fn();
+    const cancel = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: false })));
+    vi.stubGlobal("window", {
+      speechSynthesis: { speak, cancel, getVoices: () => [] },
+      SpeechSynthesisUtterance: FakeUtterance,
+    });
+    vi.stubGlobal("speechSynthesis", { speak, cancel, getVoices: () => [] });
+    vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+
+    await expect(speakText("Con hãy đọc tiếp nhé.")).resolves.toBe(true);
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(speak).toHaveBeenCalledOnce();
   });
 
   it("cancels current speech safely", () => {
@@ -94,5 +120,38 @@ describe("speech utility", () => {
     cancelSpeech();
 
     expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("stops active ElevenLabs audio when speech is canceled", async () => {
+    const play = vi.fn(() => Promise.resolve());
+    const pause = vi.fn();
+    const audio = { addEventListener: vi.fn(), currentTime: 12, pause, play };
+    const fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        blob: () => Promise.resolve(new Blob(["audio"], { type: "audio/mpeg" })),
+      }),
+    );
+    const createObjectURL = vi.fn(() => "blob:tts");
+    const revokeObjectURL = vi.fn();
+    const Audio = vi.fn(function Audio() {
+      return audio;
+    });
+
+    vi.stubGlobal("fetch", fetch);
+    vi.stubGlobal("Audio", Audio);
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    vi.stubGlobal("window", {
+      speechSynthesis: { speak: vi.fn(), cancel: vi.fn(), getVoices: () => [] },
+      SpeechSynthesisUtterance: FakeUtterance,
+    });
+    vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+
+    await speakText("Con hãy đọc tiếp nhé.");
+    cancelSpeech();
+
+    expect(pause).toHaveBeenCalledOnce();
+    expect(audio.currentTime).toBe(0);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:tts");
   });
 });

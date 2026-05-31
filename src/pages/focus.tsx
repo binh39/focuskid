@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Play, Pause, SkipForward, Check } from "lucide-react";
 import type { Mission, Subtask } from "../types";
 import { awardXp } from "../utils/rewards";
+import { loadFocusPreferences } from "../utils/preferences";
+import { getBreakDurationSeconds, getFocusDurationSeconds } from "../utils/focusRhythm";
 import "../assets/focus.css";
 
 export default function Focus() {
@@ -10,20 +12,21 @@ export default function Focus() {
 	const location = useLocation();
 	const state = (location && (location.state as { mission?: Mission })) || {};
 	const mission = state.mission || null;
-	const initialMinutes = mission?.time_minutes
-		? mission.time_minutes
-		: parseInt(String(mission?.time ?? "").replace(/[^0-9]/g, "")) || 25;
-	const focusDuration = initialMinutes * 60;
+	const preferences = loadFocusPreferences();
+	const focusDuration = getFocusDurationSeconds(mission, preferences);
+	const breakDuration = getBreakDurationSeconds(preferences);
 	const [timeLeft, setTimeLeft] = useState(() => focusDuration);
 	const [isRunning, setIsRunning] = useState(false);
 	const [sessionType, setSessionType] = useState<"Focus" | "Break">("Focus");
-	const [subtasks, setSubtasks] = useState<Subtask[]>(() => (mission?.subtasks ? mission.subtasks.map((s) => ({ ...s })) : []));
+	const [subtasks, setSubtasks] = useState<Subtask[]>(() =>
+		mission?.subtasks ? mission.subtasks.map((s) => ({ ...s })) : [],
+	);
 	const [showCongrats, setShowCongrats] = useState(false);
 	const timerRewardClaimedRef = useRef(false);
 	const timerRewardEventKeyRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		let interval: ReturnType<typeof setInterval>;
+		let interval: ReturnType<typeof setInterval> | undefined;
 		if (isRunning) {
 			interval = setInterval(() => {
 				setTimeLeft((prev) => {
@@ -31,7 +34,7 @@ export default function Focus() {
 						setIsRunning(false);
 						if (sessionType === "Focus") {
 							setSessionType("Break");
-							return 5 * 60;
+							return breakDuration;
 						}
 						navigate("/child/reward");
 						return 0;
@@ -40,8 +43,10 @@ export default function Focus() {
 				});
 			}, 1000);
 		}
-		return () => clearInterval(interval);
-	}, [isRunning, sessionType, navigate]);
+		return () => {
+			if (interval) clearInterval(interval);
+		};
+	}, [breakDuration, isRunning, navigate, sessionType]);
 
 	useEffect(() => {
 		if (sessionType !== "Break" || timerRewardClaimedRef.current) return;
@@ -61,11 +66,10 @@ export default function Focus() {
 	};
 
 	const toggleTimer = () => {
-		setIsRunning(!isRunning);
+		setIsRunning((prev) => !prev);
 	};
 
 	const finishSession = () => {
-		// Check subtasks completion
 		const allDone = subtasks.length > 0 && subtasks.every((s) => s.completed);
 		if (allDone) {
 			setShowCongrats(true);
@@ -79,7 +83,8 @@ export default function Focus() {
 		setSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s)));
 	};
 
-	const progress = ((sessionType === "Focus" ? focusDuration : 5 * 60) - timeLeft) / (sessionType === "Focus" ? focusDuration : 5 * 60) * 100;
+	const currentDuration = sessionType === "Focus" ? focusDuration : breakDuration;
+	const progress = currentDuration > 0 ? ((currentDuration - timeLeft) / currentDuration) * 100 : 0;
 	const circumference = 2 * Math.PI * 180;
 	const strokeDashoffset = circumference * (1 - progress / 100);
 
@@ -111,7 +116,7 @@ export default function Focus() {
 								r="180"
 								className="progress-fill"
 								style={{
-									strokeDashoffset: strokeDashoffset,
+									strokeDashoffset,
 									strokeDasharray: circumference,
 								}}
 							/>
@@ -127,11 +132,7 @@ export default function Focus() {
 							className={`play-btn ${isRunning ? "paused" : "playing"}`}
 							onClick={toggleTimer}
 						>
-							{isRunning ? (
-								<Pause className="icon-large" />
-							) : (
-								<Play className="icon-large" />
-							)}
+							{isRunning ? <Pause className="icon-large" /> : <Play className="icon-large" />}
 						</button>
 					</div>
 
@@ -145,7 +146,7 @@ export default function Focus() {
 						</button>
 					</div>
 
-					{subtasks && subtasks.length > 0 && (
+					{subtasks.length > 0 && (
 						<div className="subtasks-panel">
 							<h4>Steps</h4>
 							{subtasks.map((s) => (

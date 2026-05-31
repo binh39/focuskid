@@ -5,7 +5,7 @@ import ChildNavBar from "../components/ChildNavBar";
 import type { Mission, MissionFile } from "../types";
 import { getFileTimeLabel, getMissionProgress, getMissionStartItem, getMissionTimeLabel } from "../utils/missionProgress";
 import { applyRewardResult, awardXp, getStoredUser } from "../utils/rewards";
-import { loadCachedMissions, saveCachedMissions } from "../utils/missionCache";
+import { loadCachedMissions, saveCachedMissions, upsertCachedMission } from "../utils/missionCache";
 import "../assets/mission.css";
 
 type MissionWithExpanded = Mission & { expanded: boolean };
@@ -51,16 +51,23 @@ export default function ChildMissions() {
       });
       if (!res.ok) return;
 
-      setMissions((prev) =>
-        prev.map((mission) =>
+      setMissions((prev) => {
+        const next = prev.map((mission) =>
           mission.id === missionId
             ? {
                 ...mission,
-                files: (mission.files || []).map((item) => (item.id === file.id ? { ...item, completed } : item)),
+                files: (mission.files || []).map((item) =>
+                  item.id === file.id ? { ...item, completed } : item,
+                ),
               }
             : mission,
-        ),
-      );
+        );
+        const updatedMission = next.find((mission) => mission.id === missionId);
+        if (updatedMission && user?.id) {
+          upsertCachedMission(user.id, updatedMission);
+        }
+        return next;
+      });
 
       if (completed) {
         const reward = await awardXp(30, "Completed file", `file:${file.id}`);

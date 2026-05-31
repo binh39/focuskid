@@ -15,8 +15,10 @@ const {
   parseQuizzes,
   toPublicFileUrl,
 } = require("./lib/missionUtils");
+const { buildElevenLabsPayload, pickVoiceId } = require("./lib/ttsUtils");
 
 const envFiles = [
+  path.join(__dirname, "..", ".env"),
   path.join(__dirname, ".env"),
   path.join(__dirname, "..", "supabase", ".env"),
 ];
@@ -736,6 +738,44 @@ const ensureStorageBucket = async () => {
     },
   });
 };
+
+app.post("/api/tts", async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const text = String(req.body.text || "").trim();
+    const language = String(req.body.language || "vi-VN");
+
+    if (!text) {
+      return res.status(400).json({ error: "text is required" });
+    }
+    if (!apiKey) {
+      return res.status(503).json({ error: "ElevenLabs is not configured" });
+    }
+
+    const voiceId = pickVoiceId(language);
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        Accept: "audio/mpeg",
+      },
+      body: JSON.stringify(buildElevenLabsPayload(text, language)),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      return res.status(502).json({ error: errorText || "ElevenLabs request failed" });
+    }
+
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(audioBuffer);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 app.get("/api/users", async (_req, res) => {
   try {

@@ -33,3 +33,14 @@ export function saveCachedMissions(userId: number | null | undefined, missions: 
     JSON.stringify({ missions, savedAt: Date.now() } satisfies MissionCachePayload),
   );
 }
+
+export function upsertCachedMission(userId: number | null | undefined, mission: Mission) {
+  if (!userId) return;
+
+  const current = loadCachedMissions(userId);
+  const next = current.some((item) => item.id === mission.id)
+    ? current.map((item) => (item.id === mission.id ? mission : item))
+    : [...current, mission];
+
+  saveCachedMissions(userId, next);
+}

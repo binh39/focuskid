@@ -137,6 +137,16 @@
     </section>
 
     <section>
+      <h2>Backend TTS and speech lifecycle fixes</h2>
+      <ul>
+        <li><strong>Decision:</strong> treat a <code>503</code> from <code>/api/tts</code> as expected when <code>ELEVENLABS_API_KEY</code> is missing, and keep browser speech as the safe fallback.</li>
+        <li><strong>Change from plan/code:</strong> backend audio playback now has an explicit lifecycle instead of fire-and-forget <code>Audio</code> objects, so leaving Reader or starting a new read-aloud cancels the old audio.</li>
+        <li><strong>Tradeoff:</strong> object URLs are kept alive until playback ends or cancellation, using a little temporary memory so long-form ElevenLabs audio is not revoked while still playing.</li>
+        <li><strong>Change log:</strong> <code>src/utils/speech.ts</code> now defaults the reader TTS path back to English while still keeping the backend audio lifecycle/cancel logic; <code>src/pages/ChildReader.tsx</code> calls <code>cancelSpeech</code> on unmount; <code>server/index.js</code> now loads the project-root <code>.env</code> before server-local and Supabase env files so <code>ELEVENLABS_API_KEY</code> works from the documented location; <code>src/utils/speech.test.ts</code> covers canceling active backend audio.</li>
+      </ul>
+    </section>
+
+    <section>
       <h2>Current bug-fix notes</h2>
       <ul>
         <li><strong>Decision:</strong> the settings toggle bug is a state-to-style mismatch, so the fix should align the active class with the shared switch CSS instead of changing the switch logic.</li>
