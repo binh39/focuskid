@@ -322,13 +322,13 @@ export default function ChildReader() {
 
   const readCurrentInstruction = () => {
     if (selectedQuiz) {
-      speakText(`Quiz question. ${selectedQuiz.question}`);
+      speakText(`Câu hỏi trắc nghiệm. ${selectedQuiz.question}`);
       return;
     }
 
     if (selectedFile) {
       speakText(
-        "Reading mission. Start the timer when you are ready. If you need a short pause, that is okay.",
+        "Nhiệm vụ đọc. Hãy bấm bắt đầu khi con sẵn sàng. Nếu cần nghỉ một chút thì cũng không sao.",
       );
     }
   };

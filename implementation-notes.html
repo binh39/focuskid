@@ -125,5 +125,15 @@
         <li><strong>Change log:</strong> <code>src/utils/missionTemplates.ts</code> adds the default template catalog; <code>src/components/AssignMission.tsx</code> adds the chooser and apply behavior; <code>src/assets/dashboard.css</code> styles the template cards.</li>
       </ul>
     </section>
+
+    <section>
+      <h2>Camera helper and bilingual TTS tuning</h2>
+      <ul>
+        <li><strong>Decision:</strong> reduced the focus helper reminder delay from 10 seconds to 3 seconds so demo/testing feedback appears quickly while still avoiding instant false alarms.</li>
+        <li><strong>Decision:</strong> added lightweight Vietnamese-vs-English detection for browser TTS and chooses a matching <code>vi</code> or <code>en</code> voice when the browser provides one.</li>
+        <li><strong>Tradeoff:</strong> language detection is heuristic and browser voices depend on the user's OS/browser; if no Vietnamese voice is installed, the app still sets <code>lang="vi-VN"</code> but the browser may fall back to a less natural voice.</li>
+        <li><strong>Change log:</strong> <code>src/hooks/useFocusDetection.ts</code> exports 3-second defaults; <code>src/utils/speech.ts</code> adds language detection and voice selection; <code>src/pages/ChildReader.tsx</code> switches read-aloud helper copy to Vietnamese.</li>
+      </ul>
+    </section>
   </body>
 </html>
