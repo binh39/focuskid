@@ -13,44 +13,77 @@ import {
 import NavBar from "../components/NavBar";
 import type { Mission } from "../types";
 import { getStoredUser } from "../utils/rewards";
+import { loadCachedMissions, saveCachedMissions } from "../utils/missionCache";
 import "../assets/mission.css";
 
 export default function Mission() {
   const navigate = useNavigate();
-  const [missions, setMissions] = useState<(Mission & { expanded: boolean })[]>(
-    [],
+  const [missions, setMissions] = useState<(Mission & { expanded: boolean })[]>(() =>
+    loadCachedMissions(getStoredUser()?.id).map((mission) => ({ ...mission, expanded: false })),
   );
   const user = getStoredUser();
 
   useEffect(() => {
     if (!user?.id) return;
-    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
-      .then((r) => r.json())
-      .then((data: Mission[]) =>
-        setMissions(data.map((m) => ({ ...m, expanded: false }))),
-      )
-      .catch((e) => console.error(e));
+
+    const syncMissions = () => {
+      fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
+        .then((r) => r.json())
+        .then((data: Mission[]) => {
+          saveCachedMissions(user.id, data);
+          setMissions(data.map((mission) => ({ ...mission, expanded: false })));
+        })
+        .catch((e) => console.error(e));
+    };
+
+    syncMissions();
+
+    const handleMissionUpdates = () => {
+      const latestUser = getStoredUser();
+      if (!latestUser?.id) return;
+      syncMissions();
+    };
+
+    window.addEventListener("storage", handleMissionUpdates);
+    window.addEventListener("focuskid_missions_updated", handleMissionUpdates);
+    return () => {
+      window.removeEventListener("storage", handleMissionUpdates);
+      window.removeEventListener("focuskid_missions_updated", handleMissionUpdates);
+    };
   }, [user?.id]);
 
   const toggleMission = (id: number) => {
     setMissions((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)),
+      prev.map((mission) => (mission.id === id ? { ...mission, expanded: !mission.expanded } : mission)),
     );
   };
 
   const toggleSubtask = (missionId: number, subtaskId: number) => {
-    setMissions((prev) =>
-      prev.map((m) =>
-        m.id === missionId
+    setMissions((prev) => {
+      const next = prev.map((mission) =>
+        mission.id === missionId
           ? {
-              ...m,
-              subtasks: m.subtasks.map((s) =>
-                s.id === subtaskId ? { ...s, completed: !s.completed } : s,
+              ...mission,
+              subtasks: mission.subtasks.map((subtask) =>
+                subtask.id === subtaskId ? { ...subtask, completed: !subtask.completed } : subtask,
               ),
             }
-          : m,
-      ),
-    );
+          : mission,
+      );
+
+      if (user?.id) {
+        saveCachedMissions(
+          user.id,
+          next.map((item) => {
+            const mission: Mission = { ...item };
+            delete (mission as Mission & { expanded?: boolean }).expanded;
+            return mission;
+          }),
+        );
+      }
+
+      return next;
+    });
   };
 
   const getCompletionCount = (mission: Mission) => {
@@ -66,16 +99,12 @@ export default function Mission() {
   };
 
   const summary = useMemo(() => {
-    const completed = missions.filter(
-      (m) => getCompletionPercentage(m) === 100,
-    ).length;
-    const inProgress = missions.filter((m) => {
-      const p = getCompletionPercentage(m);
+    const completed = missions.filter((mission) => getCompletionPercentage(mission) === 100).length;
+    const inProgress = missions.filter((mission) => {
+      const p = getCompletionPercentage(mission);
       return p > 0 && p < 100;
     }).length;
-    const notStarted = missions.filter(
-      (m) => getCompletionPercentage(m) === 0,
-    ).length;
+    const notStarted = missions.filter((mission) => getCompletionPercentage(mission) === 0).length;
     return { completed, inProgress, notStarted };
   }, [missions]);
 
@@ -161,42 +190,24 @@ export default function Mission() {
                             className="progress-fill"
                             style={{
                               width: `${getCompletionPercentage(mission)}%`,
-                              backgroundColor: mission.color,
+                              backgroundColor: mission.color || "#8FB8A8",
                             }}
                           />
                         </div>
                         <strong>{getCompletionCount(mission)}</strong>
                       </div>
 
-                      <div
-                        className={
-                          mission.expanded ? "subtasks expanded" : "subtasks"
-                        }
-                      >
-                        {mission.subtasks.map((subtask) => (
+                      <div className={mission.expanded ? "subtasks expanded" : "subtasks"}>
+                        {(mission.subtasks || []).map((subtask) => (
                           <div className="subtask-row" key={subtask.id}>
                             <button
                               type="button"
-                              onClick={() =>
-                                toggleSubtask(mission.id, subtask.id)
-                              }
-                              className={
-                                subtask.completed
-                                  ? "checkbox checked"
-                                  : "checkbox"
-                              }
+                              onClick={() => toggleSubtask(mission.id, subtask.id)}
+                              className={subtask.completed ? "checkbox checked" : "checkbox"}
                             >
-                              {subtask.completed && (
-                                <Check className="check-icon" />
-                              )}
+                              {subtask.completed && <Check className="check-icon" />}
                             </button>
-                            <span
-                              className={
-                                subtask.completed
-                                  ? "subtask-text done"
-                                  : "subtask-text"
-                              }
-                            >
+                            <span className={subtask.completed ? "subtask-text done" : "subtask-text"}>
                               {subtask.title}
                             </span>
                           </div>
@@ -208,9 +219,7 @@ export default function Mission() {
                           style={{
                             backgroundColor: mission.color || "#8FB8A8",
                           }}
-                          onClick={() =>
-                            navigate("/child/focus", { state: { mission } })
-                          }
+                          onClick={() => navigate("/child/focus", { state: { mission } })}
                         >
                           <Play className="icon-xs" />
                           <span>Start This Mission</span>
@@ -249,8 +258,7 @@ export default function Mission() {
             <div className="panel tip">
               <h3>Quick Tip 💡</h3>
               <p>
-                Break large tasks into smaller steps to make them easier to
-                complete and track your progress better!
+                Break large tasks into smaller steps to make them easier to complete and track your progress better!
               </p>
             </div>
           </aside>

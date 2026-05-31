@@ -9,6 +9,7 @@ import {
 } from "../utils/missionProgress";
 import { fetchFocusInsights, type FocusInsights } from "../utils/focusAnalytics";
 import { getStoredUser } from "../utils/rewards";
+import { loadCachedMissions, saveCachedMissions, upsertCachedMission } from "../utils/missionCache";
 import "../assets/dashboard.css";
 
 const formatInsightDate = (date: string) => {
@@ -20,8 +21,10 @@ const formatInsightDate = (date: string) => {
 export default function ParentDashboard() {
   const navigate = useNavigate();
   const [showAssign, setShowAssign] = useState(false);
-  const [missions, setMissions] = useState<Mission[]>([]);
+  const [missions, setMissions] = useState<Mission[]>(() => loadCachedMissions(getStoredUser()?.id));
   const [focusInsights, setFocusInsights] = useState<FocusInsights | null>(null);
+
+
   const [user] = useState(() => getStoredUser());
 
   const loadMissions = useCallback(() => {
@@ -49,24 +52,41 @@ export default function ParentDashboard() {
       return;
     }
 
-    loadMissions();
-    refreshFocusInsights();
-  }, [loadMissions, navigate, refreshFocusInsights, user]);
+    const syncMissions = () => {
+      if (!user?.id) return;
+      fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
+        .then((r) => r.json())
+        .then((data: Mission[]) => {
+          saveCachedMissions(user.id, data);
+          setMissions(data);
+        })
+        .catch((e) => console.error(e));
+    };
 
-  useEffect(() => {
     const handleUpdates = () => {
-      loadMissions();
+      const latestUser = getStoredUser();
+      if (!latestUser?.id || latestUser.role !== "parent") return;
+      syncMissions();
       refreshFocusInsights();
     };
+
+    syncMissions();
+    refreshFocusInsights();
+
+
     window.addEventListener("storage", handleUpdates);
     window.addEventListener("focuskid_missions_updated", handleUpdates);
     return () => {
       window.removeEventListener("storage", handleUpdates);
       window.removeEventListener("focuskid_missions_updated", handleUpdates);
     };
-  }, [loadMissions, refreshFocusInsights]);
+  }, [navigate, refreshFocusInsights, user]);
 
-  const handleCreateMission = () => {
+  const handleCreateMission = (mission: Mission) => {
+    if (user?.id) {
+      upsertCachedMission(user.id, mission);
+    }
+    setMissions((prev) => [mission, ...prev.filter((item) => item.id !== mission.id)]);
     loadMissions();
   };
 

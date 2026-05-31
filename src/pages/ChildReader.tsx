@@ -25,7 +25,7 @@ import {
   type RewardResult,
 } from "../utils/rewards";
 import { loadFocusPreferences } from "../utils/preferences";
-import { canSpeakText, speakText } from "../utils/speech";
+import { canSpeakText, cancelSpeech, speakText } from "../utils/speech";
 import { logDistractionEvent } from "../utils/focusAnalytics";
 import "../assets/reader.css";
 
@@ -115,6 +115,7 @@ export default function ChildReader() {
           .map((file) => file.id),
       ),
   );
+  const [isFrameLoading, setIsFrameLoading] = useState(Boolean(initialFile?.file_path));
   const timerRewardClaimedRef = useRef(Boolean(initialFile?.completed));
   const [rewardNotice, setRewardNotice] = useState<{
     xp: number;
@@ -228,8 +229,13 @@ export default function ChildReader() {
     setSelectedFile(nextFile);
     setSelectedQuiz(null);
     setIsRunning(false);
+    setIsFrameLoading(Boolean(nextFile.file_path));
     setTimeLeft(isCompleted ? 0 : getFileMinutes(nextFile, mission) * 60);
     timerRewardClaimedRef.current = isCompleted;
+  };
+
+  const handleFrameLoad = () => {
+    setIsFrameLoading(false);
   };
 
   const selectQuizAt = (index: number) => {
@@ -351,16 +357,18 @@ export default function ChildReader() {
 
   const readCurrentInstruction = () => {
     if (selectedQuiz) {
-      speakText(`Câu hỏi trắc nghiệm. ${selectedQuiz.question}`);
+      void speakText(`Câu hỏi trắc nghiệm. ${selectedQuiz.question}`);
       return;
     }
 
     if (selectedFile) {
-      speakText(
+      void speakText(
         "Nhiệm vụ đọc. Hãy bấm bắt đầu khi con sẵn sàng. Nếu cần nghỉ một chút thì cũng không sao.",
       );
     }
   };
+
+  useEffect(() => cancelSpeech, []);
 
   useEffect(() => {
     if (
@@ -446,6 +454,10 @@ export default function ChildReader() {
 
             {selectedQuiz ? (
               <div className="reader-main-quiz">
+                <div className="reader-switch-note">
+                  Loaded quiz instantly. Use the arrows to move between questions.
+                </div>
+                <div className="reader-status-pill">Quiz ready</div>
                 <div className="main-quiz-shell" aria-label="Quiz content">
                   <button
                     type="button"
@@ -475,7 +487,7 @@ export default function ChildReader() {
                       <button
                         type="button"
                         className="quiz-read-aloud-btn"
-                        onClick={() => speakText(selectedQuiz.question)}
+                        onClick={() => void speakText(selectedQuiz.question)}
                         disabled={!speechSupported}
                         aria-label="Read quiz question aloud"
                       >
@@ -540,14 +552,23 @@ export default function ChildReader() {
                 </div>
               </div>
             ) : fileUrl ? (
-              <iframe
-                className="reader-frame full"
-                src={fileUrl}
-                title="Learning material"
-              />
+              <div className="reader-frame-shell">
+                {isFrameLoading && <div className="reader-frame-loading">Opening file…</div>}
+                <iframe
+                  className="reader-frame full"
+                  src={fileUrl}
+                  title="Learning material"
+                  onLoad={handleFrameLoad}
+                />
+              </div>
             ) : (
               <div className="reader-empty">
                 No file or quiz found. Please ask your parent to add one.
+              </div>
+            )}
+            {selectedFile && !selectedQuiz && (
+              <div className="reader-switch-note">
+                {isFrameLoading ? "Opening the selected file…" : "File selected. The reading view is ready."}
               </div>
             )}
           </section>
