@@ -4,23 +4,37 @@ import { Check, ChevronDown, ChevronUp, Clock, FileText, HelpCircle, Play } from
 import ChildNavBar from "../components/ChildNavBar";
 import type { Mission, MissionFile } from "../types";
 import { getFileTimeLabel, getMissionProgress, getMissionStartItem, getMissionTimeLabel } from "../utils/missionProgress";
+import { applyRewardResult, awardXp, getStoredUser } from "../utils/rewards";
+import { loadCachedMissions, saveCachedMissions } from "../utils/missionCache";
 import "../assets/mission.css";
 
 type MissionWithExpanded = Mission & { expanded: boolean };
 
 export default function ChildMissions() {
   const navigate = useNavigate();
-  const [missions, setMissions] = useState<MissionWithExpanded[]>([]);
-  const storedUser = localStorage.getItem("focuskid_user");
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user_id = parsedUser.id;
+  const [user] = useState(() => getStoredUser());
+  const [missions, setMissions] = useState<MissionWithExpanded[]>(() =>
+    loadCachedMissions(user?.id).map((m) => ({ ...m, expanded: false })),
+  );
 
   useEffect(() => {
-    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
+    if (!user) {
+      navigate("/");
+      return;
+    }
+    if (user.role !== "child") {
+      navigate("/parent/dashboard");
+      return;
+    }
+
+    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
       .then((r) => r.json())
-      .then((data: Mission[]) => setMissions(data.map((m) => ({ ...m, expanded: false }))))
+      .then((data: Mission[]) => {
+        saveCachedMissions(user.id, data);
+        setMissions(data.map((m) => ({ ...m, expanded: false })));
+      })
       .catch((e) => console.error(e));
-  }, []);
+  }, [navigate, user]);
 
   const toggleMission = (id: number) => {
     setMissions((prev) => prev.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)));
@@ -47,6 +61,12 @@ export default function ChildMissions() {
             : mission,
         ),
       );
+
+      if (completed) {
+        const reward = await awardXp(30, "Completed file", `file:${file.id}`);
+        applyRewardResult(reward);
+      }
+      window.dispatchEvent(new Event("focuskid_missions_updated"));
     } catch (e) {
       console.error(e);
     }

@@ -1,4 +1,4 @@
-import type { User } from "../types";
+import type { User, UserRole } from "../types";
 
 export type RewardRankIcon = "shield" | "medal" | "trophy" | "award" | "gem" | "crown";
 
@@ -89,9 +89,38 @@ export function getEarnedBadges(xp = 0) {
 }
 
 
+const isUserRole = (value: unknown): value is UserRole =>
+  value === "parent" || value === "child";
+
+const isStoredUser = (value: unknown): value is User => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<User>;
+  return typeof candidate.id === "number" && isUserRole(candidate.role);
+};
+
+export function clearStoredUser() {
+  localStorage.removeItem("focuskid_user");
+  window.dispatchEvent(new Event("focuskid_user_updated"));
+}
+
 export function getStoredUser(): User | null {
-  const stored = localStorage.getItem("focuskid_user");
-  return stored ? (JSON.parse(stored) as User) : null;
+  try {
+    const stored = localStorage.getItem("focuskid_user");
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as unknown;
+    if (!isStoredUser(parsed)) {
+      clearStoredUser();
+      return null;
+    }
+    return parsed;
+  } catch {
+    clearStoredUser();
+    return null;
+  }
+}
+
+export function getStoredUserId() {
+  return getStoredUser()?.id ?? null;
 }
 
 export function saveStoredUser(user: User) {

@@ -846,10 +846,14 @@ app.post("/api/login", async (req, res) => {
       .trim()
       .toLowerCase();
     const password = String(req.body.password || "");
+    const role = req.body.role == null ? null : String(req.body.role).trim();
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
-    const user = await getUserByEmail(email);
+    if (role && !["parent", "child"].includes(role)) {
+      return res.status(400).json({ error: "Role must be parent or child" });
+    }
+    const user = role ? await getUserByEmailAndRole(email, role) : await getUserByEmail(email);
     if (!user || !user.password_hash) {
       return res
         .status(404)

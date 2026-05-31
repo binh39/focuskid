@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -18,6 +18,8 @@ import {
   getMissionProgress,
   getMissionTimeLabel,
 } from "../utils/missionProgress";
+import { getStoredUser } from "../utils/rewards";
+import { loadCachedMissions, saveCachedMissions } from "../utils/missionCache";
 import "../assets/mission.css";
 
 type MissionWithExpanded = Mission & { expanded: boolean };
@@ -55,7 +57,10 @@ const isQuizReady = (quiz: QuizDraft) =>
   quiz.option_d.trim();
 
 export default function ParentMissions() {
-  const [missions, setMissions] = useState<MissionWithExpanded[]>([]);
+  const [user] = useState(() => getStoredUser());
+  const [missions, setMissions] = useState<MissionWithExpanded[]>(() =>
+    loadCachedMissions(user?.id).map((m) => ({ ...m, expanded: false })),
+  );
   const [showAssign, setShowAssign] = useState(false);
   const [pendingFileDrafts, setPendingFileDrafts] = useState<
     Record<number, FileDraft[]>
@@ -68,25 +73,30 @@ export default function ParentMissions() {
     null,
   );
   const [fileInputVersion, setFileInputVersion] = useState(0);
-  const storedUser = localStorage.getItem("focuskid_user");
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user_id = parsedUser.id;
 
-  const fetchMissions = () => {
-    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
+  const fetchMissions = useCallback(() => {
+    if (!user?.id) return;
+    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
       .then((r) => r.json())
-      .then((data: Mission[]) =>
-        setMissions(data.map((m) => ({ ...m, expanded: false }))),
-      )
+      .then((data: Mission[]) => {
+        saveCachedMissions(user.id, data);
+        setMissions(data.map((m) => ({ ...m, expanded: false })));
+      })
       .catch((e) => console.error(e));
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchMissions();
-  }, []);
+  }, [fetchMissions]);
 
   const handleCreateMission = (mission: Mission) => {
-    setMissions((prev) => [{ ...mission, expanded: false }, ...prev]);
+    setMissions((prev) => {
+      const next = [{ ...mission, expanded: false }, ...prev];
+      if (user?.id) {
+        saveCachedMissions(user.id, next);
+      }
+      return next;
+    });
   };
 
   const handleFileSelection = (

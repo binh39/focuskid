@@ -21,15 +21,19 @@ export default function ChildDashboard() {
   const navigate = useNavigate();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [user, setUser] = useState<User | null>(() => getStoredUser());
-  const storedUser = localStorage.getItem("focuskid_user");
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user_id = parsedUser?.id;
   const preferences = loadFocusPreferences();
 
   useEffect(() => {
-    if (!user_id) return;
+    if (!user) {
+      navigate("/");
+      return;
+    }
+    if (user.role !== "child") {
+      navigate("/parent/dashboard");
+      return;
+    }
 
-    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
+    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
       .then((r) => r.json())
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
@@ -37,7 +41,7 @@ export default function ChildDashboard() {
     fetchCurrentUser()
       .then((latestUser) => setUser(latestUser))
       .catch((e) => console.error(e));
-  }, [user_id]);
+  }, [navigate, user]);
 
   const rewardProfile = getRewardProfile(user?.xp || 0);
   const activeMission =

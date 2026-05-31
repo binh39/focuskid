@@ -135,5 +135,15 @@
         <li><strong>Change log:</strong> <code>src/hooks/useFocusDetection.ts</code> exports 3-second defaults; <code>src/utils/speech.ts</code> adds language detection and voice selection; <code>src/pages/ChildReader.tsx</code> switches read-aloud helper copy to Vietnamese.</li>
       </ul>
     </section>
+
+    <section>
+      <h2>Current bug-fix notes</h2>
+      <ul>
+        <li><strong>Decision:</strong> the settings toggle bug is a state-to-style mismatch, so the fix should align the active class with the shared switch CSS instead of changing the switch logic.</li>
+        <li><strong>Decision:</strong> distraction detection should always be reported to the backend when it fires, even if child reminders are disabled, so the parent dashboard still receives the event stream.</li>
+        <li><strong>Tradeoff:</strong> I am keeping the dashboard fix narrowly scoped to event logging for now; I am not introducing a full focus-session lifecycle unless the backend or UX proves it needs one.</li>
+        <li><strong>Change log:</strong> <code>src/components/SettingsView.tsx</code> now uses the existing <code>switch active</code> class so toggle visuals move when preferences change; <code>src/utils/rewards.ts</code> safely parses/clears stored users; dashboard, mission, progress, and nav files now reuse that helper to avoid missing/corrupt localStorage crashes; <code>src/pages/login.tsx</code> and <code>server/index.js</code> make login role-aware; <code>src/components/AssignMission.tsx</code> rejects invalid parent state and failed mission API responses; <code>src/pages/ChildMissions.tsx</code> and <code>src/pages/ChildReader.tsx</code> share the same file XP event key and dispatch mission update events; <code>src/pages/ChildReader.tsx</code> logs the first active distraction event to the backend and only resumes timers that were running before the pause; <code>src/pages/ParentDashboard.tsx</code> refreshes missions/insights when update signals arrive; <code>src/pages/mission.tsx</code> now navigates to the registered <code>/child/focus</code> route; <code>src/utils/focusAnalytics.ts</code> and its test now type/check mission and file ids in distraction event payloads.</li>
+      </ul>
+    </section>
   </body>
 </html>

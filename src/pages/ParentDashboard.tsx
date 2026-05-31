@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ParentNavBar from "../components/ParentNavBar";
 import AssignMission from "../components/AssignMission";
 import type { Mission } from "../types";
@@ -7,6 +8,7 @@ import {
   getMissionTimeLabel,
 } from "../utils/missionProgress";
 import { fetchFocusInsights, type FocusInsights } from "../utils/focusAnalytics";
+import { getStoredUser } from "../utils/rewards";
 import "../assets/dashboard.css";
 
 const formatInsightDate = (date: string) => {
@@ -16,26 +18,56 @@ const formatInsightDate = (date: string) => {
 };
 
 export default function ParentDashboard() {
+  const navigate = useNavigate();
   const [showAssign, setShowAssign] = useState(false);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [focusInsights, setFocusInsights] = useState<FocusInsights | null>(null);
-  const storedUser = localStorage.getItem("focuskid_user");
-  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  const user_id = parsedUser.id;
+  const [user] = useState(() => getStoredUser());
 
-  useEffect(() => {
-    fetch(`http://localhost:4000/api/missions?user_id=${user_id}`)
+  const loadMissions = useCallback(() => {
+    if (!user?.id) return;
+    fetch(`http://localhost:4000/api/missions?user_id=${user.id}`)
       .then((r) => r.json())
       .then((data) => setMissions(data))
       .catch((e) => console.error(e));
+  }, [user]);
 
-    fetchFocusInsights(user_id)
+  const refreshFocusInsights = useCallback(() => {
+    if (!user?.id) return;
+    fetchFocusInsights(user.id)
       .then((data) => setFocusInsights(data))
       .catch((e) => console.error(e));
-  }, [user_id]);
+  }, [user]);
 
-  const handleCreateMission = (mission: Mission) => {
-    setMissions((prev) => [mission, ...prev]);
+  useEffect(() => {
+    if (!user) {
+      navigate("/");
+      return;
+    }
+    if (user.role !== "parent") {
+      navigate("/child/dashboard");
+      return;
+    }
+
+    loadMissions();
+    refreshFocusInsights();
+  }, [loadMissions, navigate, refreshFocusInsights, user]);
+
+  useEffect(() => {
+    const handleUpdates = () => {
+      loadMissions();
+      refreshFocusInsights();
+    };
+    window.addEventListener("storage", handleUpdates);
+    window.addEventListener("focuskid_missions_updated", handleUpdates);
+    return () => {
+      window.removeEventListener("storage", handleUpdates);
+      window.removeEventListener("focuskid_missions_updated", handleUpdates);
+    };
+  }, [loadMissions, refreshFocusInsights]);
+
+  const handleCreateMission = () => {
+    loadMissions();
   };
 
   return (

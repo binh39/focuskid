@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Award, Target, Trophy, UserRound, Users } from "lucide-react";
+import { saveStoredUser } from "../utils/rewards";
 import "../assets/login.css";
 
 type Feature = {
@@ -58,14 +59,18 @@ export default function Login() {
 			const res = await fetch("http://localhost:4000/api/login", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email: email.trim(), password }),
+				body: JSON.stringify({ email: email.trim(), password, role }),
 			});
 			const data = await res.json().catch(() => null);
 			if (!res.ok) {
 				setError((data && data.error) || "Sign in failed. Please try again.");
 				return;
 			}
-			localStorage.setItem("focuskid_user", JSON.stringify(data));
+			if (data?.role !== role) {
+				setError(`This account is not a ${role} account. Please switch roles and try again.`);
+				return;
+			}
+			saveStoredUser(data);
 			goToRoleDashboard(data.role);
 		} catch (err) {
 			console.error(err);
@@ -108,7 +113,7 @@ export default function Login() {
 				setError((data && data.error) || "Account creation failed.");
 				return;
 			}
-			localStorage.setItem("focuskid_user", JSON.stringify(data));
+			saveStoredUser(data);
 			goToRoleDashboard(data.role);
 		} catch (err) {
 			console.error(err);
@@ -188,7 +193,8 @@ export default function Login() {
 								<label>
 									Name
 									<input
-										value={name}
+										name="name"
+											value={name}
 										onChange={(e) => setName(e.target.value)}
 										placeholder={role === "parent" ? "Parent name" : "Child name"}
 										autoComplete="name"
@@ -200,7 +206,8 @@ export default function Login() {
 								Email
 								<input
 									type="email"
-									value={email}
+									name="email"
+										value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									placeholder="email@example.com"
 									autoComplete="email"
@@ -212,6 +219,7 @@ export default function Login() {
 									Parent Email
 									<input
 										type="email"
+										name="parent_email"
 										value={parentEmail}
 										onChange={(e) => setParentEmail(e.target.value)}
 										placeholder="parent@example.com"
@@ -224,7 +232,8 @@ export default function Login() {
 								Password
 								<input
 									type="password"
-									value={password}
+									name="password"
+										value={password}
 									onChange={(e) => setPassword(e.target.value)}
 									placeholder={isSignIn ? "Your password" : "At least 6 characters"}
 									autoComplete={isSignIn ? "current-password" : "new-password"}
@@ -260,3 +269,4 @@ export default function Login() {
 		</div>
 	);
 }
+
